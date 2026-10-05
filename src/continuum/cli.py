@@ -134,8 +134,14 @@ def cmd_serve(args) -> int:
         print("MCP 支持未安装：pip install 'mcp>=1.0'（可选依赖，核心零依赖不受影响）")
         return 1
     srv = _open_server(args.db)
+    feed = None
+    try:                                # 第 0 扳机接线：常驻 MCP 模式顺带增量喂食
+        from continuum.importers.workbuddy_feed import WorkbuddyFeed
+        feed = WorkbuddyFeed.build_default(srv.be)
+    except Exception:                   # pragma: no cover - 喂食器失败不影响 serve
+        feed = None
     try:
-        mcp = build_mcp_server(srv)
+        mcp = build_mcp_server(srv, feed=feed)
     except MCPNotInstalled as e:
         # build 时才延迟导入 mcp 包；未安装时给人类可读输出而非裸 traceback
         print(f"MCP 支持未安装：{e}")

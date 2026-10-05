@@ -28,13 +28,19 @@ from continuum.udf import UDFMessage
 # 管理（WAL 允许并发读，但写事务交错不安全）——七工具在此串行化。
 # 本地单用户记忆库，串行吞吐远超需求。
 _TOOL_LOCK = threading.Lock()
+_FEED = None   # WorkbuddyFeed 实例由 build_mcp_server 注入（第 0 扳机接线）；None=未接线
 
 
 def _sync(fn):
-    """把同步工具函数包成进程内串行执行（跨线程安全）。"""
+    """把同步工具函数包成进程内串行执行（跨线程安全）+ 顺带喂食扳机。"""
     @functools.wraps(fn)
     def wrapper(*args, **kwargs):
         with _TOOL_LOCK:
+            if _FEED is not None:
+                try:
+                    _FEED.maybe_sweep()   # 内部自吞异常，绝不挡宿主调用
+                except Exception:          # pragma: no cover - 双层防护
+                    pass
             return fn(*args, **kwargs)
     return wrapper
 
@@ -47,11 +53,15 @@ class MCPNotInstalled(RuntimeError):
         )
 
 
-def build_mcp_server(cs: ContinuumServer):
+def build_mcp_server(cs: ContinuumServer, feed=None):
     """把 ContinuumServer 的七工具装配为 MCP server。依赖 mcp>=1.0（延迟导入）。
 
     mcp 2.x 把 FastMCP 更名为 MCPServer（mcp.server.mcpserver），
-    @tool() 装饰器与 run() 接口两版一致——双版本按可用性自动选择。"""
+    @tool() 装饰器与 run() 接口两版一致——双版本按可用性自动选择。
+    feed：可选的增量喂食器（如 WorkbuddyFeed）——第 0 扳机接线，每次工具
+    调用顺带触发；None=不接线（其他宿主/测试不受影响）。"""
+    global _FEED
+    _FEED = feed
     server_cls = None
     try:
         from mcp.server.fastmcp import FastMCP as server_cls  # mcp 1.x
