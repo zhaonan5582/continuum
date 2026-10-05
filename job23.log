@@ -1,0 +1,375 @@
+﻿2026-10-05T12:04:22.5690797Z Current runner version: '2.337.0'
+2026-10-05T12:04:22.5720320Z ##[group]Runner Image Provisioner
+2026-10-05T12:04:22.5721430Z Hosted Compute Agent
+2026-10-05T12:04:22.5722294Z Version: 20260901.588
+2026-10-05T12:04:22.5723114Z Commit: f88ec8081b781fac6c440065ac7ff9e710ce3d0b
+2026-10-05T12:04:22.5724112Z Build Date: 2026-09-01T19:56:44Z
+2026-10-05T12:04:22.5725106Z Worker ID: {22de3046-72fd-4dba-aee3-64686bfa4806}
+2026-10-05T12:04:22.5726064Z Azure Region: eastus
+2026-10-05T12:04:22.5727056Z ##[endgroup]
+2026-10-05T12:04:22.5728917Z ##[group]Operating System
+2026-10-05T12:04:22.5729822Z Ubuntu
+2026-10-05T12:04:22.5730494Z 24.04.5
+2026-10-05T12:04:22.5731176Z LTS
+2026-10-05T12:04:22.5731927Z ##[endgroup]
+2026-10-05T12:04:22.5732662Z ##[group]Runner Image
+2026-10-05T12:04:22.5733472Z Image: ubuntu-24.04
+2026-10-05T12:04:22.5734208Z Version: 20260927.320.1
+2026-10-05T12:04:22.5736359Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260927.320/images/ubuntu/Ubuntu2404-Readme.md
+2026-10-05T12:04:22.5738674Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260927.320
+2026-10-05T12:04:22.5740066Z ##[endgroup]
+2026-10-05T12:04:22.5741700Z ##[group]GITHUB_TOKEN Permissions
+2026-10-05T12:04:22.5744175Z Contents: read
+2026-10-05T12:04:22.5744919Z Metadata: read
+2026-10-05T12:04:22.5745767Z Packages: read
+2026-10-05T12:04:22.5746611Z ##[endgroup]
+2026-10-05T12:04:22.5749297Z Secret source: Actions
+2026-10-05T12:04:22.5750455Z Cache mode: write
+2026-10-05T12:04:22.5751640Z Prepare workflow directory
+2026-10-05T12:04:22.6209283Z Prepare all required actions
+2026-10-05T12:04:22.6270339Z Getting action download info
+2026-10-05T12:04:22.8280905Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-10-05T12:04:23.0530655Z Download action repository 'actions/setup-python@v5' (SHA:a26af69be951a213d495a4c3e4e4022e16d87065)
+2026-10-05T12:04:23.6056701Z Complete job name: ubuntu-latest / py3.13
+2026-10-05T12:04:23.6661984Z ##[group]Run actions/checkout@v4
+2026-10-05T12:04:23.6662736Z with:
+2026-10-05T12:04:23.6663128Z   repository: zhaonan5582/continuum
+2026-10-05T12:04:23.6666770Z   token: ***
+2026-10-05T12:04:23.6667151Z   ssh-strict: true
+2026-10-05T12:04:23.6667534Z   ssh-user: git
+2026-10-05T12:04:23.6667911Z   persist-credentials: true
+2026-10-05T12:04:23.6668330Z   clean: true
+2026-10-05T12:04:23.6668711Z   sparse-checkout-cone-mode: true
+2026-10-05T12:04:23.6669146Z   fetch-depth: 1
+2026-10-05T12:04:23.6669526Z   fetch-tags: false
+2026-10-05T12:04:23.6669918Z   show-progress: true
+2026-10-05T12:04:23.6670354Z   lfs: false
+2026-10-05T12:04:23.6670728Z   submodules: false
+2026-10-05T12:04:23.6671131Z   set-safe-directory: true
+2026-10-05T12:04:23.6671578Z   allow-unsafe-pr-checkout: false
+2026-10-05T12:04:23.6672243Z env:
+2026-10-05T12:04:23.6672595Z   PYTHONPATH: src
+2026-10-05T12:04:23.6672978Z ##[endgroup]
+2026-10-05T12:04:23.7573374Z Syncing repository: zhaonan5582/continuum
+2026-10-05T12:04:23.7575760Z ##[group]Getting Git version info
+2026-10-05T12:04:23.7576938Z Working directory is '/home/runner/work/continuum/continuum'
+2026-10-05T12:04:23.7578412Z [command]/usr/bin/git version
+2026-10-05T12:04:23.7607666Z git version 2.55.0
+2026-10-05T12:04:23.7630898Z ##[endgroup]
+2026-10-05T12:04:23.7637416Z Temporarily overriding HOME='/home/runner/work/_temp/abdeac73-ead8-463d-8f20-aca1f198cae4' before making global git config changes
+2026-10-05T12:04:23.7639421Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-05T12:04:23.7640877Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/continuum/continuum
+2026-10-05T12:04:23.7712297Z Deleting the contents of '/home/runner/work/continuum/continuum'
+2026-10-05T12:04:23.7719262Z ##[group]Initializing the repository
+2026-10-05T12:04:23.7724267Z [command]/usr/bin/git init /home/runner/work/continuum/continuum
+2026-10-05T12:04:23.8002775Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-10-05T12:04:23.8004499Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-10-05T12:04:23.8007955Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-10-05T12:04:23.8008817Z hint: call:
+2026-10-05T12:04:23.8009345Z hint:
+2026-10-05T12:04:23.8010005Z hint: 	git config --global init.defaultBranch <name>
+2026-10-05T12:04:23.8010687Z hint:
+2026-10-05T12:04:23.8011328Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-10-05T12:04:23.8012275Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-10-05T12:04:23.8013192Z hint:
+2026-10-05T12:04:23.8013790Z hint: 	git branch -m <name>
+2026-10-05T12:04:23.8014364Z hint:
+2026-10-05T12:04:23.8015066Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-10-05T12:04:23.8016356Z Initialized empty Git repository in /home/runner/work/continuum/continuum/.git/
+2026-10-05T12:04:23.8018828Z [command]/usr/bin/git remote add origin https://github.com/zhaonan5582/continuum
+2026-10-05T12:04:23.8180834Z ##[endgroup]
+2026-10-05T12:04:23.8182229Z ##[group]Disabling automatic garbage collection
+2026-10-05T12:04:23.8184800Z [command]/usr/bin/git config --local gc.auto 0
+2026-10-05T12:04:23.8391745Z ##[endgroup]
+2026-10-05T12:04:23.8392838Z ##[group]Setting up auth
+2026-10-05T12:04:23.8399337Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-05T12:04:23.8435810Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-05T12:04:23.8770969Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-05T12:04:23.8806279Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-05T12:04:23.9007354Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-05T12:04:23.9040239Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-05T12:04:23.9254728Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-10-05T12:04:23.9920919Z ##[endgroup]
+2026-10-05T12:04:23.9922138Z ##[group]Fetching the repository
+2026-10-05T12:04:23.9931581Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +d6675a24ce6f5690cc5b5cc89c93f5c3ee6c3011:refs/remotes/origin/main
+2026-10-05T12:04:24.2678108Z From https://github.com/zhaonan5582/continuum
+2026-10-05T12:04:24.2679831Z  * [new ref]         d6675a24ce6f5690cc5b5cc89c93f5c3ee6c3011 -> origin/main
+2026-10-05T12:04:24.2683209Z ##[endgroup]
+2026-10-05T12:04:24.2684811Z ##[group]Determining the checkout info
+2026-10-05T12:04:24.2686695Z ##[endgroup]
+2026-10-05T12:04:24.2691641Z [command]/usr/bin/git sparse-checkout disable
+2026-10-05T12:04:24.2925547Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-10-05T12:04:24.3117986Z ##[group]Checking out the ref
+2026-10-05T12:04:24.3121365Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+2026-10-05T12:04:24.3369861Z Switched to a new branch 'main'
+2026-10-05T12:04:24.3374782Z branch 'main' set up to track 'origin/main'.
+2026-10-05T12:04:24.3381128Z ##[endgroup]
+2026-10-05T12:04:24.3421174Z [command]/usr/bin/git log -1 --format=%H
+2026-10-05T12:04:24.3445642Z d6675a24ce6f5690cc5b5cc89c93f5c3ee6c3011
+2026-10-05T12:04:24.3763960Z ##[group]Run actions/setup-python@v5
+2026-10-05T12:04:24.3764984Z with:
+2026-10-05T12:04:24.3765743Z   python-version: 3.13
+2026-10-05T12:04:24.3766856Z   check-latest: false
+2026-10-05T12:04:24.3774520Z   token: ***
+2026-10-05T12:04:24.3775331Z   update-environment: true
+2026-10-05T12:04:24.3776458Z   allow-prereleases: false
+2026-10-05T12:04:24.3777466Z   freethreaded: false
+2026-10-05T12:04:24.3778257Z env:
+2026-10-05T12:04:24.3778958Z   PYTHONPATH: src
+2026-10-05T12:04:24.3779714Z ##[endgroup]
+2026-10-05T12:04:24.4968884Z ##[group]Installed versions
+2026-10-05T12:04:24.5033153Z (node:2074) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-05T12:04:24.5036398Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-05T12:04:24.5038577Z Successfully set up CPython (3.13.15)
+2026-10-05T12:04:24.5040677Z ##[endgroup]
+2026-10-05T12:04:24.5250825Z ##[group]Run python -c "import continuum; print('version', continuum.VERSION)"
+2026-10-05T12:04:24.5253536Z [36;1mpython -c "import continuum; print('version', continuum.VERSION)"[0m
+2026-10-05T12:04:24.5524204Z shell: /usr/bin/bash -e {0}
+2026-10-05T12:04:24.5525298Z env:
+2026-10-05T12:04:24.5526080Z   PYTHONPATH: src
+2026-10-05T12:04:24.5527328Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.15/x64
+2026-10-05T12:04:24.5528854Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.15/x64/lib/pkgconfig
+2026-10-05T12:04:24.5530430Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.15/x64
+2026-10-05T12:04:24.5531833Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.15/x64
+2026-10-05T12:04:24.5533230Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.15/x64
+2026-10-05T12:04:24.5534631Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.15/x64/lib
+2026-10-05T12:04:24.5535843Z ##[endgroup]
+2026-10-05T12:04:24.5985405Z version 0.0.1
+2026-10-05T12:04:24.6084759Z ##[group]Run python -m unittest discover -s tests -v
+2026-10-05T12:04:24.6086071Z [36;1mpython -m unittest discover -s tests -v[0m
+2026-10-05T12:04:24.6151053Z shell: /usr/bin/bash -e {0}
+2026-10-05T12:04:24.6151926Z env:
+2026-10-05T12:04:24.6152695Z   PYTHONPATH: src
+2026-10-05T12:04:24.6153777Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.15/x64
+2026-10-05T12:04:24.6155241Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.15/x64/lib/pkgconfig
+2026-10-05T12:04:24.6156884Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.15/x64
+2026-10-05T12:04:24.6158229Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.15/x64
+2026-10-05T12:04:24.6159571Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.15/x64
+2026-10-05T12:04:24.6160937Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.15/x64/lib
+2026-10-05T12:04:24.6162088Z ##[endgroup]
+2026-10-05T12:04:25.0591042Z test_full_smoke (test_append_smoke.TestAppendSmoke.test_full_smoke) ... ok
+2026-10-05T12:04:25.0594608Z test_invalid_udf_rejects_whole_batch (test_append_smoke.TestAppendSmoke.test_invalid_udf_rejects_whole_batch)
+2026-10-05T12:04:25.0607339Z 批内一条非法 → 整批拒绝（全或无），绝不留半批落库。 ... ok
+2026-10-05T12:04:25.0610106Z test_same_second_same_content_is_deduped (test_append_smoke.TestAppendSmoke.test_same_second_same_content_is_deduped)
+2026-10-05T12:04:25.0624485Z 已知取舍（文档化）：秒级 ts 下同秒同角色同内容视为重推被去重。 ... ok
+2026-10-05T12:04:25.0639703Z test_session_idempotent (test_append_smoke.TestAppendSmoke.test_session_idempotent) ... ok
+2026-10-05T12:04:25.0643440Z test_short_query_returns_empty_not_error (test_append_smoke.TestAppendSmoke.test_short_query_returns_empty_not_error)
+2026-10-05T12:04:25.0657085Z trigram 语义：≥3 字符才有意义；短查询显式空结果（P1 结构化主力接管）。 ... ok
+2026-10-05T12:04:25.0659309Z test_real_codex_session (test_codex_adapter.TestCodexAdapter.test_real_codex_session)
+2026-10-05T12:04:25.0661610Z 用本机真实 codex 会话文件实测解析。 ... skipped '本机无 codex 会话文件'
+2026-10-05T12:04:25.0663602Z test_synthetic_developer_filtered (test_codex_adapter.TestCodexAdapter.test_synthetic_developer_filtered) ... ok
+2026-10-05T12:04:25.1088209Z test_backup_to_file (test_commercial.TestBackup.test_backup_to_file) ... ok
+2026-10-05T12:04:25.3499214Z test_content_at_limit_accepted (test_commercial.TestDoSLimits.test_content_at_limit_accepted) ... ok
+2026-10-05T12:04:25.3518343Z test_empty_host_rejected_at_tools_layer (test_commercial.TestDoSLimits.test_empty_host_rejected_at_tools_layer) ... ok
+2026-10-05T12:04:25.3523041Z test_oversized_content_rejected (test_commercial.TestDoSLimits.test_oversized_content_rejected)
+2026-10-05T12:04:25.3547092Z 单条 content 超 MAX_CONTENT_BYTES 整批拒绝（磁盘耗尽 DoS 防线）。 ... ok
+2026-10-05T12:04:26.0782072Z test_10k_messages_and_fts_latency (test_commercial.TestScaleBaseline.test_10k_messages_and_fts_latency) ... ok
+2026-10-05T12:04:26.0851473Z test_no_network_imports (test_commercial.TestZeroNetwork.test_no_network_imports) ... ok
+2026-10-05T12:04:26.0856404Z test_broken_json_reported (test_doctor.TestCheckConfigFiles.test_broken_json_reported) ... ok
+2026-10-05T12:04:26.0860359Z test_missing_entry_reported (test_doctor.TestCheckConfigFiles.test_missing_entry_reported) ... ok
+2026-10-05T12:04:26.0863873Z test_valid_entry_detected (test_doctor.TestCheckConfigFiles.test_valid_entry_detected) ... ok
+2026-10-05T12:04:26.0865080Z test_real_handshake_with_own_serve (test_doctor.TestServerLive.test_real_handshake_with_own_serve)
+2026-10-05T12:04:26.1779456Z 用本仓库 serve 命令做真实握手（:memory: db，不落盘）。 ... /home/runner/work/continuum/continuum/tests/test_doctor.py:75: ResourceWarning: unclosed file <_io.TextIOWrapper name=5 encoding='utf-8'>
+2026-10-05T12:04:26.1781330Z   ok = check_server_live(serve_cmd, {"PYTHONPATH": str(REPO / "src")})
+2026-10-05T12:04:26.1782505Z ResourceWarning: Enable tracemalloc to get the object allocation traceback
+2026-10-05T12:04:26.1783224Z FAIL
+2026-10-05T12:04:26.1783624Z test_decision_pattern (test_extract.TestHeuristics.test_decision_pattern) ... ok
+2026-10-05T12:04:26.1786669Z test_exclusion_pattern (test_extract.TestHeuristics.test_exclusion_pattern) ... ok
+2026-10-05T12:04:26.1787829Z test_no_match_no_output (test_extract.TestHeuristics.test_no_match_no_output) ... ok
+2026-10-05T12:04:26.1788807Z test_redline_pattern (test_extract.TestHeuristics.test_redline_pattern) ... ok
+2026-10-05T12:04:26.1789861Z test_short_sentence_skipped (test_extract.TestHeuristics.test_short_sentence_skipped) ... ok
+2026-10-05T12:04:26.1790891Z test_entity_mention_attach (test_extract.TestRunExtraction.test_entity_mention_attach)
+2026-10-05T12:04:26.1812978Z 已有实体出现在 statement 中 → 记 mention；无命中不新建实体（P1 只挂不建）。 ... ok
+2026-10-05T12:04:26.1832823Z test_extraction_idempotent (test_extract.TestRunExtraction.test_extraction_idempotent) ... ok
+2026-10-05T12:04:26.1853368Z test_extraction_produces_pending_with_four_fields (test_extract.TestRunExtraction.test_extraction_produces_pending_with_four_fields) ... ok
+2026-10-05T12:04:26.1872882Z test_stated_by_split (test_extract.TestRunExtraction.test_stated_by_split) ... ok
+2026-10-05T12:04:26.1874652Z test_handshake_tools_and_roundtrip (test_mcp_smoke.TestMCPStdioSmoke.test_handshake_tools_and_roundtrip) ... skipped "需要 mcp 可选依赖（pip install 'mcp>=1.0'）"
+2026-10-05T12:04:26.1876192Z test_audit_traceability (test_p1_recall_audit.TestRecallAndAudit.test_audit_traceability)
+2026-10-05T12:04:26.1897336Z 溯源：每条记忆的 source_message_id 能反查到 audit 里的 append 记录。 ... ok
+2026-10-05T12:04:26.1898438Z test_full_loop_append_extract_recall_audit (test_p1_recall_audit.TestRecallAndAudit.test_full_loop_append_extract_recall_audit)
+2026-10-05T12:04:26.1933248Z P1 闭环冒烟：append → extract → recall → audit 全链。 ... ok
+2026-10-05T12:04:26.1934222Z test_pending_not_leaked_into_recall (test_p1_recall_audit.TestRecallAndAudit.test_pending_not_leaked_into_recall)
+2026-10-05T12:04:26.1957684Z 探针20 回归固化：pending（未经确认的猜测）不得进入用户召回。 ... ok
+2026-10-05T12:04:26.1994645Z test_recall_empty_library_graceful (test_p1_recall_audit.TestRecallAndAudit.test_recall_empty_library_graceful) ... ok
+2026-10-05T12:04:26.2019246Z test_recall_finds_decision (test_p1_recall_audit.TestRecallAndAudit.test_recall_finds_decision) ... ok
+2026-10-05T12:04:26.2046804Z test_recall_latency_budget (test_p1_recall_audit.TestRecallAndAudit.test_recall_latency_budget) ... ok
+2026-10-05T12:04:26.2067975Z test_recall_redline (test_p1_recall_audit.TestRecallAndAudit.test_recall_redline) ... ok
+2026-10-05T12:04:26.2092815Z test_recall_time_hint_parses (test_p1_recall_audit.TestRecallAndAudit.test_recall_time_hint_parses) ... ok
+2026-10-05T12:04:26.2094570Z test_confirm_extract_produces_active (test_p1b_importer_lifecycle.TestLifecycleWiring.test_confirm_extract_produces_active)
+2026-10-05T12:04:26.2114545Z 探针23 修复回归：用户显式 confirm → active → 可召回。 ... ok
+2026-10-05T12:04:26.2134581Z test_sweeper_wired_to_extract (test_p1b_importer_lifecycle.TestLifecycleWiring.test_sweeper_wired_to_extract) ... ok
+2026-10-05T12:04:26.2156633Z test_import_filters_and_converts (test_p1b_importer_lifecycle.TestWorkbuddyImporter.test_import_filters_and_converts) ... ok
+2026-10-05T12:04:26.2178686Z test_import_idempotent (test_p1b_importer_lifecycle.TestWorkbuddyImporter.test_import_idempotent) ... ok
+2026-10-05T12:04:26.2179882Z test_oversized_line_skipped_not_fatal (test_p1b_importer_lifecycle.TestWorkbuddyImporter.test_oversized_line_skipped_not_fatal)
+2026-10-05T12:04:26.3175158Z 探针24 回归：一条超大行只跳过自身，不毁掉整个会话导入。 ... ok
+2026-10-05T12:04:26.3196159Z test_asset_forced_full_no_judge (test_p2_judge_compact.TestCompactNoJudge.test_asset_forced_full_no_judge) ... ok
+2026-10-05T12:04:26.3215418Z test_head_tail_protected (test_p2_judge_compact.TestCompactNoJudge.test_head_tail_protected) ... ok
+2026-10-05T12:04:26.3234876Z test_no_judge_never_drops (test_p2_judge_compact.TestCompactNoJudge.test_no_judge_never_drops) ... ok
+2026-10-05T12:04:26.3254842Z test_plan_counts (test_p2_judge_compact.TestCompactNoJudge.test_plan_counts) ... ok
+2026-10-05T12:04:26.3274150Z test_pointered_truncatable (test_p2_judge_compact.TestCompactNoJudge.test_pointered_truncatable) ... ok
+2026-10-05T12:04:26.3294714Z test_judge_drop_only_with_pointer (test_p2_judge_compact.TestCompactWithJudge.test_judge_drop_only_with_pointer) ... ok
+2026-10-05T12:04:26.3295979Z test_judge_drop_without_pointer_downgrades (test_p2_judge_compact.TestCompactWithJudge.test_judge_drop_without_pointer_downgrades)
+2026-10-05T12:04:26.3314526Z judge 建议 drop 但无沉淀指针 → 引擎强制降级 truncate（无损层承诺，机制优于自觉）。 ... ok
+2026-10-05T12:04:26.3334165Z test_judge_error_fails_safe (test_p2_judge_compact.TestCompactWithJudge.test_judge_error_fails_safe) ... ok
+2026-10-05T12:04:26.3352674Z test_judge_high_confidence_activates (test_p2_judge_compact.TestJudgeExtractOrbitA.test_judge_high_confidence_activates) ... ok
+2026-10-05T12:04:26.3370694Z test_low_confidence_stays_pending (test_p2_judge_compact.TestJudgeExtractOrbitA.test_low_confidence_stays_pending) ... ok
+2026-10-05T12:04:26.3391146Z test_recall_does_not_show_pending_after_judge (test_p2_judge_compact.TestJudgeExtractOrbitA.test_recall_does_not_show_pending_after_judge) ... ok
+2026-10-05T12:04:26.3406900Z test_block_hit (test_p3_guard_persona.TestGuard.test_block_hit) ... ok
+2026-10-05T12:04:26.3422162Z test_disabled_redline_ignored (test_p3_guard_persona.TestGuard.test_disabled_redline_ignored) ... ok
+2026-10-05T12:04:26.3437179Z test_guard_audited (test_p3_guard_persona.TestGuard.test_guard_audited) ... ok
+2026-10-05T12:04:26.3437977Z test_negative_not_blocked (test_p3_guard_persona.TestGuard.test_negative_not_blocked)
+2026-10-05T12:04:26.3452461Z 反用例：读操作不该被拦（pattern 子串命中但语义不同——pattern 设计者责任， ... ok
+2026-10-05T12:04:26.3453250Z test_pattern_should_include_action (test_p3_guard_persona.TestGuard.test_pattern_should_include_action)
+2026-10-05T12:04:26.3467645Z 正用例修正示范：pattern 带动作词才精准。 ... ok
+2026-10-05T12:04:26.3482626Z test_project_scope_isolation (test_p3_guard_persona.TestGuard.test_project_scope_isolation) ... ok
+2026-10-05T12:04:26.3498007Z test_warn_and_ask_priority (test_p3_guard_persona.TestGuard.test_warn_and_ask_priority) ... ok
+2026-10-05T12:04:26.3524855Z test_assemble_uses_real_persona (test_p3_guard_persona.TestPersonaEngine.test_assemble_uses_real_persona) ... ok
+2026-10-05T12:04:26.3540218Z test_samples_versioned (test_p3_guard_persona.TestPersonaEngine.test_samples_versioned) ... ok
+2026-10-05T12:04:26.3554610Z test_version_chain_and_current (test_p3_guard_persona.TestPersonaEngine.test_version_chain_and_current) ... ok
+2026-10-05T12:04:26.3555693Z test_claude_md_snippet_markers (test_p3b_cli_adapters.TestClaudeCodeAdapter.test_claude_md_snippet_markers) ... ok
+2026-10-05T12:04:26.3557194Z test_hooks_config_template (test_p3b_cli_adapters.TestClaudeCodeAdapter.test_hooks_config_template) ... ok
+2026-10-05T12:04:26.3558237Z test_to_udf_bad_line_skipped (test_p3b_cli_adapters.TestClaudeCodeAdapter.test_to_udf_bad_line_skipped) ... ok
+2026-10-05T12:04:26.3559342Z test_to_udf_filters_and_converts (test_p3b_cli_adapters.TestClaudeCodeAdapter.test_to_udf_filters_and_converts) ... ok
+2026-10-05T12:04:26.3560331Z test_sh_files_lf (test_p3b_cli_adapters.TestGitattributesShellLF.test_sh_files_lf)
+2026-10-05T12:04:26.3561061Z 跨平台纪律：.sh 必须 LF（shebang 兼容）。 ... ok
+2026-10-05T12:04:26.3640053Z test_current_without_persona_fails_gracefully (test_p3b_cli_adapters.TestPersonaCLI.test_current_without_persona_fails_gracefully) ... ok
+2026-10-05T12:04:26.3716977Z test_version_add_list_roundtrip (test_p3b_cli_adapters.TestPersonaCLI.test_version_add_list_roundtrip) ... <frozen os>:717: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7f4ac33c56c0>
+2026-10-05T12:04:26.3717977Z ResourceWarning: Enable tracemalloc to get the object allocation traceback
+2026-10-05T12:04:26.3718560Z <frozen os>:717: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7f4ac33c7e20>
+2026-10-05T12:04:26.3719082Z ResourceWarning: Enable tracemalloc to get the object allocation traceback
+2026-10-05T12:04:26.3719589Z <frozen os>:717: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7f4ac29688b0>
+2026-10-05T12:04:26.3720088Z ResourceWarning: Enable tracemalloc to get the object allocation traceback
+2026-10-05T12:04:26.3720817Z <frozen os>:717: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7f4ac2968d60>
+2026-10-05T12:04:26.3721329Z ResourceWarning: Enable tracemalloc to get the object allocation traceback
+2026-10-05T12:04:26.3771330Z ok
+2026-10-05T12:04:26.3843780Z test_guard_mode_allow_silent (test_p3b_hooks_runner.TestHookModes.test_guard_mode_allow_silent) ... ok
+2026-10-05T12:04:26.3929727Z test_guard_mode_block_outputs_deny (test_p3b_hooks_runner.TestHookModes.test_guard_mode_block_outputs_deny) ... ok
+2026-10-05T12:04:26.4004135Z test_prompt_mode_outputs_context (test_p3b_hooks_runner.TestHookModes.test_prompt_mode_outputs_context) ... ok
+2026-10-05T12:04:26.4073397Z test_session_end_produces_pending (test_p3b_hooks_runner.TestHookModes.test_session_end_produces_pending) ... ok
+2026-10-05T12:04:26.4133076Z test_unknown_on_rejected (test_p3b_hooks_runner.TestHookModes.test_unknown_on_rejected) ... ok
+2026-10-05T12:04:26.4151578Z test_runner_executes_and_reports (test_p3b_hooks_runner.TestRedlineTestRunner.test_runner_executes_and_reports) ... ok
+2026-10-05T12:04:26.4152839Z test_scope_filtered_negative (test_p3b_hooks_runner.TestRedlineTestRunner.test_scope_filtered_negative)
+2026-10-05T12:04:26.4168861Z scope 隔离：proj-B 下 proj-A 的 warn 红线不命中 → allow。 ... ok
+2026-10-05T12:04:26.4277654Z test_a_fact_recall_90 (test_persona_swap.TestPersonaSwap.test_a_fact_recall_90)
+2026-10-05T12:04:26.4511421Z (a) 会话 B（新会话）装配后，事实召回 ≥90%。 ... ok
+2026-10-05T12:04:26.4512449Z test_b_conventions_fully_in_package (test_persona_swap.TestPersonaSwap.test_b_conventions_fully_in_package)
+2026-10-05T12:04:26.4524226Z (b) 10 条约定 100% 出现在装配包 L1。 ... ok
+2026-10-05T12:04:26.4524955Z test_c_redlines_fully_in_package (test_persona_swap.TestPersonaSwap.test_c_redlines_fully_in_package)
+2026-10-05T12:04:26.4535217Z (c) 5 条红线 100% 出现在装配包（红线知识不丢；guard 拦截属 P3）。 ... ok
+2026-10-05T12:04:26.4535914Z test_d_assemble_budget (test_persona_swap.TestPersonaSwap.test_d_assemble_budget)
+2026-10-05T12:04:26.4545797Z (d) 装配包 ≤8K token（超预算必须有 warning）。 ... ok
+2026-10-05T12:04:26.4547821Z test_build_without_mcp_raises_with_guidance (test_project_meta.TestMCPAssembly.test_build_without_mcp_raises_with_guidance)
+2026-10-05T12:04:26.4570610Z 未安装 mcp 时：明确报错 + 携带安装指引（诚实接口）。 ... ok
+2026-10-05T12:04:26.4571422Z test_module_import_does_not_require_mcp (test_project_meta.TestMCPAssembly.test_module_import_does_not_require_mcp)
+2026-10-05T12:04:26.4585065Z 延迟导入验证：本模块可 import（无需 mcp 已安装）。 ... ok
+2026-10-05T12:04:26.4589526Z test_build_exclude_pro (test_project_meta.TestProjectMeta.test_build_exclude_pro) ... ok
+2026-10-05T12:04:26.4592757Z test_core_has_zero_runtime_deps (test_project_meta.TestProjectMeta.test_core_has_zero_runtime_deps) ... ok
+2026-10-05T12:04:26.4595610Z test_license_declared_agpl (test_project_meta.TestProjectMeta.test_license_declared_agpl) ... ok
+2026-10-05T12:04:26.4597277Z test_udf_schema_json_valid_and_frozen (test_project_meta.TestProjectMeta.test_udf_schema_json_valid_and_frozen) ... ok
+2026-10-05T12:04:26.4600452Z test_version_single_source (test_project_meta.TestProjectMeta.test_version_single_source) ... ok
+2026-10-05T12:04:26.4601378Z test_extract_conversation (test_proxy.TestAnthropicProxy.test_extract_conversation) ... ok
+2026-10-05T12:04:26.4603536Z test_extract_usage (test_proxy.TestAnthropicProxy.test_extract_usage) ... ok
+2026-10-05T12:04:26.4604418Z test_inject_system_string (test_proxy.TestAnthropicProxy.test_inject_system_string) ... ok
+2026-10-05T12:04:26.4605243Z test_anthropic (test_proxy.TestFormatDetection.test_anthropic) ... ok
+2026-10-05T12:04:26.4605937Z test_gemini (test_proxy.TestFormatDetection.test_gemini) ... ok
+2026-10-05T12:04:26.4606730Z test_openai (test_proxy.TestFormatDetection.test_openai) ... ok
+2026-10-05T12:04:26.4607386Z test_responses (test_proxy.TestFormatDetection.test_responses) ... ok
+2026-10-05T12:04:26.4608348Z test_unknown_passthrough (test_proxy.TestFormatDetection.test_unknown_passthrough) ... ok
+2026-10-05T12:04:26.4609310Z test_extract_conversation (test_proxy.TestGeminiProxy.test_extract_conversation) ... ok
+2026-10-05T12:04:26.4610546Z test_extract_usage (test_proxy.TestGeminiProxy.test_extract_usage) ... ok
+2026-10-05T12:04:26.4611357Z test_inject_system (test_proxy.TestGeminiProxy.test_inject_system) ... ok
+2026-10-05T12:04:26.4612201Z test_extract_conversation (test_proxy.TestOpenAIProxy.test_extract_conversation) ... ok
+2026-10-05T12:04:26.4613114Z test_extract_usage (test_proxy.TestOpenAIProxy.test_extract_usage) ... ok
+2026-10-05T12:04:26.4614080Z test_inject_system_existing (test_proxy.TestOpenAIProxy.test_inject_system_existing) ... ok
+2026-10-05T12:04:26.4615107Z test_inject_system_no_existing (test_proxy.TestOpenAIProxy.test_inject_system_no_existing) ... ok
+2026-10-05T12:04:26.4616121Z test_process_openai_with_assembly (test_proxy.TestProxyCore.test_process_openai_with_assembly) ... ok
+2026-10-05T12:04:26.4617257Z test_process_redline_block (test_proxy.TestProxyCore.test_process_redline_block)
+2026-10-05T12:04:26.4618134Z 红线命中 block → 拒绝信号，不返回修改后 body。 ... ok
+2026-10-05T12:04:26.4618910Z test_process_unknown_passthrough (test_proxy.TestProxyCore.test_process_unknown_passthrough) ... ok
+2026-10-05T12:04:26.4620042Z test_extract_conversation_list_input (test_proxy.TestResponsesProxy.test_extract_conversation_list_input) ... ok
+2026-10-05T12:04:26.4621268Z test_extract_conversation_str_input (test_proxy.TestResponsesProxy.test_extract_conversation_str_input) ... ok
+2026-10-05T12:04:26.4622203Z test_extract_usage (test_proxy.TestResponsesProxy.test_extract_usage) ... ok
+2026-10-05T12:04:26.4623125Z test_inject_instructions_appends (test_proxy.TestResponsesProxy.test_inject_instructions_appends) ... ok
+2026-10-05T12:04:26.4624196Z test_inject_instructions_creates (test_proxy.TestResponsesProxy.test_inject_instructions_creates) ... ok
+2026-10-05T12:04:27.0638920Z test_health_check (test_proxy_server.TestProxyServer.test_health_check) ... ok
+2026-10-05T12:04:27.0641497Z /opt/hostedtoolcache/Python/3.13.15/x64/lib/python3.13/unittest/suite.py:107: ResourceWarning: unclosed <socket.socket fd=6, family=2, type=1, proto=0, laddr=('127.0.0.1', 39857)>
+2026-10-05T12:04:27.0642143Z   for index, test in enumerate(self):
+2026-10-05T12:04:27.0642485Z ResourceWarning: Enable tracemalloc to get the object allocation traceback
+2026-10-05T12:04:27.0643037Z test_openai_proxy_captures_and_appends (test_proxy_server.TestProxyServer.test_openai_proxy_captures_and_appends)
+2026-10-05T12:04:27.0687219Z 需要真实 LLM 端点转发——CI 跳过（本地配 BYOK 后跑）。 ... skipped '端到端测试需要真实 LLM 端点（CI 无网络/key）'
+2026-10-05T12:04:27.5718895Z test_redline_block_returns_403 (test_proxy_server.TestProxyServer.test_redline_block_returns_403)
+2026-10-05T12:04:27.5759901Z 需要代理 server 转发通道可达——CI 跳过（本地跑）。 ... skipped '端到端测试需要代理转发通道（CI 无网络/key）'
+2026-10-05T12:04:28.0807152Z test_migrate_applies_both (test_schema_migration.TestSchemaMigration.test_migrate_applies_both) ... ok
+2026-10-05T12:04:28.0820331Z test_migrate_creates_all_core_tables (test_schema_migration.TestSchemaMigration.test_migrate_creates_all_core_tables) ... ok
+2026-10-05T12:04:28.0834594Z test_migrate_is_idempotent (test_schema_migration.TestSchemaMigration.test_migrate_is_idempotent) ... ok
+2026-10-05T12:04:28.0837016Z test_migration_gap_rejected (test_schema_migration.TestSchemaMigration.test_migration_gap_rejected) ... ok
+2026-10-05T12:04:28.0838015Z test_hours_trigger_without_rounds (test_sweeper.TestScheduler.test_hours_trigger_without_rounds) ... ok
+2026-10-05T12:04:28.0838814Z test_no_fn_no_crash (test_sweeper.TestScheduler.test_no_fn_no_crash) ... ok
+2026-10-05T12:04:28.0839695Z test_state_machine_triggers_at_20_rounds (test_sweeper.TestScheduler.test_state_machine_triggers_at_20_rounds) ... ok
+2026-10-05T12:04:28.0840607Z test_either_first_wins (test_sweeper.TestShouldSweep.test_either_first_wins) ... ok
+2026-10-05T12:04:28.0841231Z test_hours_threshold (test_sweeper.TestShouldSweep.test_hours_threshold) ... ok
+2026-10-05T12:04:28.0841677Z test_rounds_threshold (test_sweeper.TestShouldSweep.test_rounds_threshold) ... ok
+2026-10-05T12:04:28.1314195Z test_120_facts_extract_and_recall (test_synthetic_recall.TestSyntheticRecallBaseline.test_120_facts_extract_and_recall) ... ok
+2026-10-05T12:04:28.1315299Z test_free_build_by_default (test_tools_contract.TestBuildFlags.test_free_build_by_default) ... ok
+2026-10-05T12:04:28.1315943Z test_pro_injection_detected (test_tools_contract.TestBuildFlags.test_pro_injection_detected)
+2026-10-05T12:04:28.4543354Z 双构建验证：mock pro 包存在 → detect_build 判定 pro；不存在 → free。 ... ok
+2026-10-05T12:04:28.4543960Z test_unknown_feature_fails_closed (test_tools_contract.TestBuildFlags.test_unknown_feature_fails_closed) ... ok
+2026-10-05T12:04:28.4562381Z test_all_seven_mounted (test_tools_contract.TestSevenToolsContract.test_all_seven_mounted) ... ok
+2026-10-05T12:04:28.4580566Z test_append_real_implementation (test_tools_contract.TestSevenToolsContract.test_append_real_implementation) ... ok
+2026-10-05T12:04:28.4581373Z test_no_stubs_remain (test_tools_contract.TestSevenToolsContract.test_no_stubs_remain)
+2026-10-05T12:04:28.4602909Z v1.6：七工具全部实装——任何工具调用都不应再抛 FeatureNotAvailable。 ... ok
+2026-10-05T12:04:28.4603634Z test_p1p2_tools_no_longer_stub (test_tools_contract.TestSevenToolsContract.test_p1p2_tools_no_longer_stub)
+2026-10-05T12:04:28.4626770Z 已实装工具的回退防护：防止未来误回退成 stub。 ... ok
+2026-10-05T12:04:28.4628395Z test_bad_role_rejected (test_udf.TestUDF.test_bad_role_rejected) ... ok
+2026-10-05T12:04:28.4629011Z test_bad_ts_rejected (test_udf.TestUDF.test_bad_ts_rejected) ... ok
+2026-10-05T12:04:28.4629604Z test_bool_tokens_rejected (test_udf.TestUDF.test_bool_tokens_rejected)
+2026-10-05T12:04:28.4630581Z bool 是 int 子类，True 会伪装成 1——显式拒绝。 ... ok
+2026-10-05T12:04:28.4631099Z test_empty_content_allowed (test_udf.TestUDF.test_empty_content_allowed) ... ok
+2026-10-05T12:04:28.4631774Z test_loads_from_jsonl_line (test_udf.TestUDF.test_loads_from_jsonl_line) ... ok
+2026-10-05T12:04:28.4632451Z test_meta_must_be_object (test_udf.TestUDF.test_meta_must_be_object) ... ok
+2026-10-05T12:04:28.4633117Z test_negative_tokens_rejected (test_udf.TestUDF.test_negative_tokens_rejected)
+2026-10-05T12:04:28.4633789Z v1.1 审查补充：tokens 负数静默入库是脏数据（探针12），必须拦截。 ... ok
+2026-10-05T12:04:28.4634409Z test_semantically_invalid_ts_rejected (test_udf.TestUDF.test_semantically_invalid_ts_rejected)
+2026-10-05T12:04:28.4635100Z 正则只查形状；25:99 这类形状合法但语义无效的时刻必须拦下。 ... ok
+2026-10-05T12:04:28.4635615Z test_unknown_field_rejected (test_udf.TestUDF.test_unknown_field_rejected) ... ok
+2026-10-05T12:04:28.4636293Z test_valid_roundtrip (test_udf.TestUDF.test_valid_roundtrip) ... ok
+2026-10-05T12:04:28.4637053Z test_wrong_version_rejected (test_udf.TestUDF.test_wrong_version_rejected) ... ok
+2026-10-05T12:04:28.4637481Z 
+2026-10-05T12:04:28.4637628Z ======================================================================
+2026-10-05T12:04:28.4638319Z FAIL: test_real_handshake_with_own_serve (test_doctor.TestServerLive.test_real_handshake_with_own_serve)
+2026-10-05T12:04:28.4639068Z 用本仓库 serve 命令做真实握手（:memory: db，不落盘）。
+2026-10-05T12:04:28.4639486Z ----------------------------------------------------------------------
+2026-10-05T12:04:28.4640168Z Traceback (most recent call last):
+2026-10-05T12:04:28.4645616Z   File "/home/runner/work/continuum/continuum/tests/test_doctor.py", line 76, in test_real_handshake_with_own_serve
+2026-10-05T12:04:28.4646150Z     self.assertTrue(ok)
+2026-10-05T12:04:28.4646370Z     ~~~~~~~~~~~~~~~^^^^
+2026-10-05T12:04:28.4646824Z AssertionError: False is not true
+2026-10-05T12:04:28.4646972Z 
+2026-10-05T12:04:28.4647116Z ----------------------------------------------------------------------
+2026-10-05T12:04:28.4647424Z Ran 141 tests in 3.407s
+2026-10-05T12:04:28.4647549Z 
+2026-10-05T12:04:28.4647645Z FAILED (failures=1, skipped=4)
+2026-10-05T12:04:28.4647930Z （无人格版本）
+2026-10-05T12:04:28.4648164Z 人格 v1 已创建（parent=vNone，reason=初版）
+2026-10-05T12:04:28.4648426Z 样本 #1 已挂到 persona v1
+2026-10-05T12:04:28.4648536Z 
+2026-10-05T12:04:28.4648728Z [换人测试-a] 事实召回 99/100 = 99%，延迟中位 0.2ms
+2026-10-05T12:04:28.4648870Z 
+2026-10-05T12:04:28.4649029Z [合成基线] 查询=100 召回=100 (100%) 延迟中位=0.4ms 最大=0.5ms
+2026-10-05T12:04:28.4905896Z ##[error]Process completed with exit code 1.
+2026-10-05T12:04:28.5038189Z Post job cleanup.
+2026-10-05T12:04:28.5808970Z [command]/usr/bin/git version
+2026-10-05T12:04:28.5848296Z git version 2.55.0
+2026-10-05T12:04:28.5880268Z Temporarily overriding HOME='/home/runner/work/_temp/b1aba65c-cc69-4692-8847-402dddf922bc' before making global git config changes
+2026-10-05T12:04:28.5881609Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-05T12:04:28.5885294Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/continuum/continuum
+2026-10-05T12:04:28.5923689Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-05T12:04:28.5956632Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-05T12:04:28.6190983Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-05T12:04:28.6222949Z http.https://github.com/.extraheader
+2026-10-05T12:04:28.6232593Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-10-05T12:04:28.6265577Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-05T12:04:28.6501144Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-05T12:04:28.6540954Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-05T12:04:28.6909992Z Cleaning up orphan processes
+2026-10-05T12:04:28.7171431Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-python@v5. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

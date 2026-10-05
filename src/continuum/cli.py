@@ -129,12 +129,17 @@ def cmd_serve(args) -> int:
     if getattr(args, "on", None):
         return _run_hook(args.on, args.db, stdin_text=getattr(args, "stdin_text", None))
     try:
-        from continuum.server.mcp import build_mcp_server
+        from continuum.server.mcp import MCPNotInstalled, build_mcp_server
     except ImportError:
         print("MCP 支持未安装：pip install 'mcp>=1.0'（可选依赖，核心零依赖不受影响）")
         return 1
     srv = _open_server(args.db)
-    mcp = build_mcp_server(srv)
+    try:
+        mcp = build_mcp_server(srv)
+    except MCPNotInstalled as e:
+        # build 时才延迟导入 mcp 包；未安装时给人类可读输出而非裸 traceback
+        print(f"MCP 支持未安装：{e}")
+        return 1
     mcp.run()          # stdio
     return 0
 

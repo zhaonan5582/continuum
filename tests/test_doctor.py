@@ -68,7 +68,12 @@ class TestCheckConfigFiles(unittest.TestCase):
 
 class TestServerLive(unittest.TestCase):
     def test_real_handshake_with_own_serve(self):
-        """用本仓库 serve 命令做真实握手（:memory: db，不落盘）。"""
+        """用本仓库 serve 命令做真实握手（:memory: db，不落盘）。
+        需要 mcp 包（CI 零依赖环境 serve 会诚实报「未安装」而非握手成功）。"""
+        try:
+            import mcp  # noqa: F401
+        except ImportError:
+            self.skipTest("需要 mcp 可选依赖（CI 零依赖环境自动跳过）")
         serve_cmd = [sys.executable, "-m", "continuum.cli", "serve", "--db", ":memory:"]
         buf = io.StringIO()
         with redirect_stdout(buf):
