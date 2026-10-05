@@ -29,10 +29,16 @@ class UDFError(ValueError):
 
 @dataclass(frozen=True)
 class UDFMeta:
-    """可选元数据块。tool=触发本次 tool 消息的工具名；tokens=该消息 token 数（可空）。"""
+    """可选元数据块。tool=触发本次 tool 消息的工具名；tokens=该消息 token 数（可空，非负）。"""
 
     tool: str | None = None
     tokens: int | None = None
+
+    def validate(self) -> list[str]:
+        errs: list[str] = []
+        if self.tokens is not None and (not isinstance(self.tokens, int) or isinstance(self.tokens, bool) or self.tokens < 0):
+            errs.append(f"tokens 必须是非负整数: {self.tokens!r}")
+        return errs
 
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
@@ -104,6 +110,7 @@ def parse_udf(data: dict[str, Any]) -> UDFMessage:
         ),
     )
     errs = msg.validate()
+    errs += (msg.meta.validate() if isinstance(msg.meta, UDFMeta) else ["meta 校验失败"])
     if unknown:
         errs.append(f"未知字段（UDF v1 冻结，禁止私有扩展）: {sorted(unknown)}")
     if "udf_version" in data and data["udf_version"] != UDF_VERSION:

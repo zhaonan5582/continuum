@@ -94,25 +94,25 @@ class TestBuildFlags(unittest.TestCase):
         self.assertFalse(is_feature_available("not.a.feature"))
 
     def test_pro_injection_detected(self):
-        """双构建验证：向 sys.path 注入临时 continuum.pro 包 → 自动识别为 pro。"""
-        import importlib
-        import tempfile
-        with tempfile.TemporaryDirectory() as td:
-            pkg = Path(td) / "continuum"
-            (pkg / "pro").mkdir(parents=True)
-            (pkg / "__init__.py").write_text("")
-            (pkg / "pro" / "__init__.py").write_text("")
-            sys.path.insert(0, td)
-            try:
-                importlib.invalidate_caches()
-                spec = importlib.util.find_spec("continuum.pro")
-                # 注意：主包 continuum 在本仓库不含 pro；此处验证检测机制本身
-                self.assertTrue(spec is None or spec is not None)  # find_spec 不抛错
-                # 直接用文件系统语义验证 pro 探测逻辑
-                pro_exists = (pkg / "pro" / "__init__.py").exists()
-                self.assertTrue(pro_exists)
-            finally:
-                sys.path.remove(td)
+        """双构建验证：mock pro 包存在 → detect_build 判定 pro；不存在 → free。
+        （v1.1 修正：原断言 `spec is None or spec is not None` 恒真，是假测试。）"""
+        from unittest.mock import patch
+        from continuum import buildflags
+
+        # 分支 1：pro 包可被找到
+        fake_spec = types.SimpleNamespace(name="continuum.pro")
+        with patch.object(buildflags.importlib.util, "find_spec", return_value=fake_spec):
+            info = buildflags.detect_build()
+            self.assertTrue(info.pro_available)
+            self.assertEqual(info.edition, "pro")
+            self.assertTrue(buildflags.is_feature_available("pro.cross_host_merge"))
+
+        # 分支 2：pro 包不存在
+        with patch.object(buildflags.importlib.util, "find_spec", return_value=None):
+            info = buildflags.detect_build()
+            self.assertFalse(info.pro_available)
+            self.assertEqual(info.edition, "free")
+            self.assertFalse(buildflags.is_feature_available("pro.cross_host_merge"))
 
 
 if __name__ == "__main__":

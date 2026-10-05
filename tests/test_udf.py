@@ -63,6 +63,18 @@ class TestUDF(unittest.TestCase):
         with self.assertRaises(UDFError):
             parse_udf(bad)
 
+    def test_negative_tokens_rejected(self):
+        """v1.1 审查补充：tokens 负数静默入库是脏数据（探针12），必须拦截。"""
+        bad = dict(VALID, meta={"tokens": -5})
+        with self.assertRaises(UDFError):
+            parse_udf(bad)
+
+    def test_bool_tokens_rejected(self):
+        """bool 是 int 子类，True 会伪装成 1——显式拒绝。"""
+        bad = dict(VALID, meta={"tokens": True})
+        with self.assertRaises(UDFError):
+            parse_udf(bad)
+
     def test_empty_content_allowed(self):
         msg = parse_udf(dict(VALID, content=""))
         self.assertEqual(msg.content, "")
