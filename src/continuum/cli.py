@@ -5,6 +5,7 @@
 子命令：
 - serve            启动 MCP server（P1+）
 - proxy            启动 LLM API 透明代理（P2-c：OpenAI 兼容/Anthropic/Gemini）
+- doctor           一键体检：配置/server/宿主加载状态 + 各宿主生效指引
 - persona add      录入 few-shot 样本（人工挑选，docs/01 §5.4）
 - persona list     列样本
 - persona version  创建人格新版本
@@ -151,6 +152,13 @@ def cmd_proxy(args) -> int:
     return 0
 
 
+def cmd_doctor(args) -> int:
+    """一键体检：配置文件 → 记忆库 → 按配置确切命令拉起 server 握手 → 生效指引。"""
+    from continuum.doctor import run_doctor
+
+    return run_doctor()
+
+
 def _read_hook_stdin(injected: str | None = None) -> dict:
     """读 Claude Code hook 的 stdin JSON（解析失败返回空 dict，不挂死）。
     injected 非空时直接使用（测试/编程调用），不读 stdin。"""
@@ -284,6 +292,9 @@ def build_parser() -> argparse.ArgumentParser:
     px.add_argument("--host", default="127.0.0.1", help="监听地址（默认 127.0.0.1）")
     px.add_argument("--port", type=int, default=8402, help="监听端口（默认 8402）")
     px.set_defaults(func=cmd_proxy)
+
+    dt = sub.add_parser("doctor", help="一键体检：配置/server 自检/宿主加载状态 + 生效指引")
+    dt.set_defaults(func=cmd_doctor)
 
     gt = sub.add_parser("guard-test", help="执行红线正反测试集（防误伤回归）")
     gt.set_defaults(func=cmd_guard_test)
