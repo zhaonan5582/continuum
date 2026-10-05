@@ -293,14 +293,27 @@ class SQLiteBackend(StorageBackend):
         time_from: str | None = None,
         time_to: str | None = None,
         limit: int = 20,
+        include_pending: bool = False,
     ) -> list[sqlite3.Row]:
         """结构化过滤主力（§5.3）：statement 逐词 LIKE + 类型/时间过滤 + user-stated 优先。
+
+        status 语义（v1.2 审查修正）：默认只返回 active——pending 是未经确认的
+        低置信度猜测，直接进用户召回 = 把猜测当记忆卖（探针20 坐实）。
+        include_pending=True 仅供管理/调试路径使用。
+
+        LIKE 通配符（%/_）做转义（ESCAPE '\\'）——分词层虽已天然滤掉大部分，
+        此处按设计安全兜底（下划线在 \\w 分词中可存活）。
         空词列表返回空（避免全表扫描）。"""
         terms = [t for t in terms if t]
         if not terms:
             return []
-        conds = ["status != 'quarantined'"] + ["statement LIKE ?" for _ in terms]
-        params: list = [f"%{t}%" for t in terms]
+
+        def _escape(s: str) -> str:
+            return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+        conds = ["status = 'active'" if not include_pending else "status IN ('active','pending')"]
+        conds += ["statement LIKE ? ESCAPE '\\'" for _ in terms]
+        params: list = [f"%{_escape(t)}%" for t in terms]
         if kind:
             conds.append("kind = ?")
             params.append(kind)

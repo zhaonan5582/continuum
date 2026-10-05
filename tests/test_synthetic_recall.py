@@ -67,10 +67,11 @@ class TestSyntheticRecallBaseline(unittest.TestCase):
                                                 external_session_id="synth", messages=msgs))
             self.assertEqual(r.accepted, N)
 
-            # 2) 机制扳机：抽取（无 judge，全 pending）
+            # 2) 机制扳机：抽取（无 judge，全 pending）→ 模拟确认（pending → active）
             ex = srv.memory_extract(ExtractScope(session_id=r.session_id))
             self.assertGreaterEqual(ex.produced_pending, 100,
                                     f"抽取产出过低: {ex.produced_pending}")
+            be.conn.execute("UPDATE memories SET status='active' WHERE status='pending'")
 
             # 3) 100 次查询，统计召回（top-20 内含目标关键词即命中）
             hits = 0

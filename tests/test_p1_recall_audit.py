@@ -40,8 +40,10 @@ class TestRecallAndAudit(unittest.TestCase):
                 _msg("2026-10-05T10:00:30.000Z", "user", "以后都用 PYTHONPATH=src 跑测试，这是约定。"),
             ),
         ))
-        # 机制扳机：extract
+        # 机制扳机：extract（产出全为 pending——未确认猜测）
         self.srv.memory_extract(ExtractScope(session_id=None, since_ts=None))
+        # 模拟 judge/人工确认：pending → active（P2 前，recall 只应见到 active）
+        self.be.conn.execute("UPDATE memories SET status='active' WHERE status='pending'")
 
     def tearDown(self):
         self.be.close()
@@ -85,6 +87,24 @@ class TestRecallAndAudit(unittest.TestCase):
         self.assertGreaterEqual(r.total_matched, 1)
         e = self.srv.memory_audit(AuditQuery(action="extract"))
         self.assertGreaterEqual(e.total_matched, 1)
+
+    def test_pending_not_leaked_into_recall(self):
+        """探针20 回归固化：pending（未经确认的猜测）不得进入用户召回。"""
+        # 重置一条为 pending 模拟未确认状态
+        self.be.conn.execute(
+            "UPDATE memories SET status='pending' WHERE statement LIKE '%SQLite%'"
+        )
+        rows = self.be.search_memories(["SQLite"])
+        self.assertTrue(
+            all(r["status"] != "pending" for r in rows),
+            "pending 条目泄漏进检索结果",
+        )
+        r = self.srv.memory_recall("SQLite 存储")
+        self.assertFalse(
+            any(i.statement.startswith("我们决定用 SQLite") and i.kind == "decision"
+                for i in r.items),
+            "pending 记忆条目不应出现在召回（verbatim 原文除外）",
+        )
 
     def test_full_loop_append_extract_recall_audit(self):
         """P1 闭环冒烟：append → extract → recall → audit 全链。"""
