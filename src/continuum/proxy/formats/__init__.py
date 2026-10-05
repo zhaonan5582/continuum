@@ -10,12 +10,14 @@ from continuum.proxy.formats.anthropic import AnthropicAdapter
 from continuum.proxy.formats.base import LLMFormatAdapter
 from continuum.proxy.formats.gemini import GeminiAdapter
 from continuum.proxy.formats.openai_compat import OpenAICompatAdapter
+from continuum.proxy.formats.openai_responses import OpenAIResponsesAdapter
 
 # 首发格式（按检测优先级排序）
 _FORMATS: list[LLMFormatAdapter] = [
-    AnthropicAdapter(),       # path+header 双重检测，先于 OpenAI 排
-    GeminiAdapter(),          # path 特征明确
-    OpenAICompatAdapter(),    # path 兜底
+    AnthropicAdapter(),        # path+header 双重检测，先于 OpenAI 排
+    GeminiAdapter(),           # path 特征明确
+    OpenAIResponsesAdapter(),  # /v1/responses（codex wire_api="responses"）先于兜底
+    OpenAICompatAdapter(),     # /chat/completions 兜底（OpenAI/DeepSeek/vLLM/Ollama/Groq/国产）
 ]
 
 

@@ -270,11 +270,15 @@ def build_parser() -> argparse.ArgumentParser:
     bk.set_defaults(func=cmd_backup)
 
     sv = sub.add_parser("serve", help="启动 MCP server（stdio）；--on 进入钩子执行模式")
+    sv.add_argument("--db", default=argparse.SUPPRESS,
+                    help="记忆库路径（也可放子命令前：continuum --db X serve）")
     sv.add_argument("--on", choices=["session-end", "prompt", "guard"], default=None,
                     help="档位 B 钩子执行模式（由 hooks 配置模板自动生成）")
     sv.set_defaults(func=cmd_serve)
 
     px = sub.add_parser("proxy", help="启动 LLM API 透明代理（零宿主配合，方式 B）")
+    px.add_argument("--db", default=argparse.SUPPRESS,
+                    help="记忆库路径（也可放子命令前：continuum --db X proxy）")
     px.add_argument("--target", required=True,
                     help="上游 LLM API base URL（如 https://api.deepseek.com）")
     px.add_argument("--host", default="127.0.0.1", help="监听地址（默认 127.0.0.1）")

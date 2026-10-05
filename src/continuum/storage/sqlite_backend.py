@@ -25,7 +25,10 @@ class SQLiteBackend(StorageBackend):
         self.path = str(path)
         self._migrations_dir = str(migrations_dir)
         # isolation_level=None：显式事务控制（迁移原子性依赖此模式）
-        self.conn = sqlite3.connect(self.path, isolation_level=None)
+        # check_same_thread=False：MCP server 在 anyio worker 线程调用工具（mcp 2.x），
+        # 连接须允许跨线程；并发安全由 mcp.py 的 _TOOL_LOCK 串行化保证——
+        # 库使用方若自行多线程直连 backend，须自行加锁。
+        self.conn = sqlite3.connect(self.path, isolation_level=None, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
         self.conn.execute("PRAGMA foreign_keys = ON")
         self.conn.execute("PRAGMA journal_mode = WAL")

@@ -14,6 +14,7 @@ from continuum.proxy.formats import (  # noqa: E402
     AnthropicAdapter,
     GeminiAdapter,
     OpenAICompatAdapter,
+    OpenAIResponsesAdapter,
 )
 
 OPENAI_HEADERS = {"content-type": "application/json", "authorization": "Bearer sk-test"}
@@ -42,6 +43,24 @@ GEMINI_BODY = {
     "systemInstruction": {"parts": [{"text": "You are helpful."}]},
 }
 
+# OpenAI Responses API：input 可为纯 string 或 message 列表（content 块化）
+RESPONSES_BODY_STR = {
+    "model": "glm-5.3-flash",
+    "input": "上周我们定了什么？",
+}
+RESPONSES_BODY_LIST = {
+    "model": "glm-5.3-flash",
+    "instructions": "You are helpful.",
+    "input": [
+        {"role": "user", "content": [{"type": "input_text", "text": "上周我们定了什么？"}]},
+    ],
+}
+RESPONSES_RESPONSE = {
+    "output": [{"type": "message", "role": "assistant",
+                "content": [{"type": "output_text", "text": "定了方案A。"}]}],
+    "usage": {"input_tokens": 120, "output_tokens": 8, "total_tokens": 128},
+}
+
 ASSEMBLY = "## 红线\n- 严禁删除生产配置\n## 约定\n- 使用方案A"
 
 
@@ -57,6 +76,10 @@ class TestFormatDetection(unittest.TestCase):
     def test_gemini(self):
         fmt = detect_format("/v1beta/models/gemini-2.0-flash:generateContent", {})
         self.assertIsInstance(fmt, GeminiAdapter)
+
+    def test_responses(self):
+        fmt = detect_format("/v1/responses", {"content-type": "application/json"})
+        self.assertIsInstance(fmt, OpenAIResponsesAdapter)
 
     def test_unknown_passthrough(self):
         self.assertIsNone(detect_format("/completions", {"content-type": "application/json"}))
@@ -87,6 +110,36 @@ class TestOpenAIProxy(unittest.TestCase):
     def test_extract_usage(self):
         usage = self.fmt.extract_usage({"usage": {"prompt_tokens": 100, "completion_tokens": 50}})
         self.assertEqual(usage, {"base": 100, "completion": 50})
+
+
+class TestResponsesProxy(unittest.TestCase):
+    """OpenAI Responses API（codex wire_api="responses"）适配器。"""
+
+    def setUp(self):
+        self.fmt = OpenAIResponsesAdapter()
+
+    def test_extract_conversation_str_input(self):
+        conv = self.fmt.extract_conversation(RESPONSES_BODY_STR)
+        self.assertEqual(conv, [{"role": "user", "content": "上周我们定了什么？"}])
+
+    def test_extract_conversation_list_input(self):
+        conv = self.fmt.extract_conversation(RESPONSES_BODY_LIST)
+        self.assertEqual(conv, [{"role": "user", "content": "上周我们定了什么？"}])
+
+    def test_inject_instructions_appends(self):
+        out = self.fmt.inject_system(RESPONSES_BODY_LIST, ASSEMBLY)
+        self.assertEqual(out["instructions"], f"You are helpful.\n\n{ASSEMBLY}")
+        # 原 input 不变（深拷贝注入，不改调用方请求体）
+        self.assertEqual(len(RESPONSES_BODY_LIST["input"]), 1)
+
+    def test_inject_instructions_creates(self):
+        out = self.fmt.inject_system(RESPONSES_BODY_STR, ASSEMBLY)
+        self.assertEqual(out["instructions"], ASSEMBLY)
+        self.assertEqual(out["input"], "上周我们定了什么？")
+
+    def test_extract_usage(self):
+        usage = self.fmt.extract_usage(RESPONSES_RESPONSE)
+        self.assertEqual(usage, {"base": 120, "completion": 8})
 
 
 class TestAnthropicProxy(unittest.TestCase):
