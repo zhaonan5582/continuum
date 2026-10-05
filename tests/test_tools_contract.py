@@ -61,24 +61,15 @@ class TestSevenToolsContract(unittest.TestCase):
 
     def test_phase_stubs_are_honest(self):
         """未到期的工具必须诚实报错且携带期次——不静默装死。
-        （v1.4 更新：P2 memory_compact 已实装，从 stub 清单移除。）"""
-        cases = [
-            ("memory_assemble", None, "P2"),
-            ("memory_guard", Operation(kind="write", target="x"), "P3"),
-        ]
-        for name, arg, phase in cases:
-            fn = getattr(self.srv, name)
-            with self.assertRaises(FeatureNotAvailable) as cm:
-                if name == "memory_assemble":
-                    fn()
-                else:
-                    fn(arg)
-            self.assertIn(phase, str(cm.exception), f"{name} 报错未携带期次")
+        （v1.5 更新：memory_assemble 已随 P2-b 实装，stub 清单只剩 memory_guard。）"""
+        with self.assertRaises(FeatureNotAvailable) as cm:
+            self.srv.memory_guard(Operation(kind="write", target="x"))
+        self.assertIn("P3", str(cm.exception))
 
     def test_p1p2_tools_no_longer_stub(self):
         """已实装工具的回退防护：防止未来误回退成 stub。"""
         for name in ("memory_append", "memory_extract", "memory_recall",
-                     "memory_audit", "memory_compact"):
+                     "memory_audit", "memory_compact", "memory_assemble"):
             fn = getattr(self.srv, name)
             try:
                 if name == "memory_append":
