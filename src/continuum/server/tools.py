@@ -306,6 +306,38 @@ class ContinuumServer:
         return AuditResult(entries=tuple(entries), total_matched=total)
 
     # ---- P2 · 已实装 ----
+    def memory_assemble(self, project_id: str | None = None) -> AssemblePackage:
+        """冷启动装配包（第一防线）：persona 占位（P3）+ L0 + 当前项目 L1 + 最近现场。
+        总预算 ≤8K token，超预算按「最近现场 → 事实」顺序剪（红线/决策/约定不动）。"""
+        from continuum.snapshot import estimate_tokens, materialize_l0, materialize_l1
+
+        l0 = materialize_l0(self.be)
+        l1 = materialize_l1(self.be, project_id)
+        recent_rows = self.be.fetch_messages_since(None, limit=20)
+        recent = tuple(m.content for _, m in recent_rows)
+
+        persona_md = "（人格引擎于 P3 上线；当前协作规则见 L0/L1）"
+        parts_used = estimate_tokens(persona_md) + estimate_tokens(l0) + estimate_tokens(l1)
+        warnings: list[str] = []
+        kept_recent: list[str] = []
+        budget = 8_000
+        for text in recent:
+            t = estimate_tokens(text)
+            if parts_used + t > budget:
+                warnings.append(f"最近现场因预算截断 {len(recent) - len(kept_recent)} 条（L0+L1 优先）")
+                break
+            kept_recent.append(text)
+            parts_used += t
+
+        pkg = AssemblePackage(
+            project_id=project_id, persona_md=persona_md, snapshot_md=l0 + "\n\n" + l1,
+            recent_verbatim=tuple(kept_recent), token_estimate=parts_used,
+            warnings=tuple(warnings),
+        )
+        self.be.audit("core", "assemble", project_id or "global",
+                      {"token_estimate": pkg.token_estimate, "recent": len(kept_recent)})
+        return pkg
+
     def memory_compact(self, rng: CompactRange) -> CompactPlan:
         """按条判决压缩（宪法 5）：逐条 full/truncate/drop + 理由 + 原文指针。
         产物是清单不是摘要。有 judge 用 judge 逐条判；无 judge 启发式兜底（拿不准一律 full）。
@@ -330,11 +362,6 @@ class ContinuumServer:
                          for v in ("full", "truncate", "drop")},
         })
         return plan
-
-    # ---- P2 · 契约 stub ----
-
-    def memory_assemble(self, project_id: str | None = None) -> AssemblePackage:
-        raise FeatureNotAvailable("memory_assemble", self.PHASES["memory_assemble"])
 
     # ---- P3 · 契约 stub ----
     def memory_guard(self, operation: Operation) -> GuardVerdict:
