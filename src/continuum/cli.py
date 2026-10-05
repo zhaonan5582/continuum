@@ -4,6 +4,7 @@
 
 子命令：
 - serve            启动 MCP server（P1+）
+- proxy            启动 LLM API 透明代理（P2-c：OpenAI 兼容/Anthropic/Gemini）
 - persona add      录入 few-shot 样本（人工挑选，docs/01 §5.4）
 - persona list     列样本
 - persona version  创建人格新版本
@@ -137,6 +138,19 @@ def cmd_serve(args) -> int:
     return 0
 
 
+def cmd_proxy(args) -> int:
+    """启动 LLM API 透明代理（方式 B：零宿主配合，阻塞直到 Ctrl+C）。
+
+    请求/响应原样转发给 --target；同时透明抽取对话入库、注入记忆、计量 token。
+    与方式 A（serve：MCP 直连）互为冗余防线，可单独使用也可叠加。"""
+    from continuum.proxy.server import run_proxy
+
+    migrations = str(Path(__file__).resolve().parent / "storage" / "migrations" / "sql")
+    run_proxy(host=args.host, port=args.port, db_path=args.db,
+              target_url=args.target, migrations_dir=migrations)
+    return 0
+
+
 def _read_hook_stdin(injected: str | None = None) -> dict:
     """读 Claude Code hook 的 stdin JSON（解析失败返回空 dict，不挂死）。
     injected 非空时直接使用（测试/编程调用），不读 stdin。"""
@@ -259,6 +273,13 @@ def build_parser() -> argparse.ArgumentParser:
     sv.add_argument("--on", choices=["session-end", "prompt", "guard"], default=None,
                     help="档位 B 钩子执行模式（由 hooks 配置模板自动生成）")
     sv.set_defaults(func=cmd_serve)
+
+    px = sub.add_parser("proxy", help="启动 LLM API 透明代理（零宿主配合，方式 B）")
+    px.add_argument("--target", required=True,
+                    help="上游 LLM API base URL（如 https://api.deepseek.com）")
+    px.add_argument("--host", default="127.0.0.1", help="监听地址（默认 127.0.0.1）")
+    px.add_argument("--port", type=int, default=8402, help="监听端口（默认 8402）")
+    px.set_defaults(func=cmd_proxy)
 
     gt = sub.add_parser("guard-test", help="执行红线正反测试集（防误伤回归）")
     gt.set_defaults(func=cmd_guard_test)

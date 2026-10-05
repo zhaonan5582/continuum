@@ -9,6 +9,29 @@
 长程任务中上下文压缩导致 agent「换人」：状态丢失、连贯性丢失、人格漂移、红线失守。
 Continuum 用四道机制化防线对抗：落库扳机（L3 原文无损层）→ 机制化收敛（sweeping）→ 冷启动装配包 → 红线门禁 hook。
 
+## 两种接入方式
+
+Continuum 同时支持**不挂代理**与**挂代理**两条路径——宿主能力不同、用户偏好不同，两条都要通：
+
+### 方式 A：MCP 直连（不挂代理，默认推荐）
+宿主 agent 直接挂 Continuum MCP server（七工具：append / extract / recall / audit / compact / assemble / guard）。落库与召回由**机制扳机**（轮次 / 时长阈值）驱动，不依赖 agent 自觉。
+
+```bash
+python -m continuum.cli serve --db ~/memory.continuum.db
+```
+
+### 方式 B：LLM API 透明代理（零宿主配合）
+Continuum 作为本地 HTTP 代理插入 agent 与 LLM API 之间：请求/响应原样转发，同时透明抽取对话入库、注入记忆、按三行制明示 token 增量。宿主只需把 base URL 改成 `http://127.0.0.1:8402/v1`，其余零改动。
+
+```bash
+python -m continuum.cli proxy --target https://api.deepseek.com
+```
+
+已支持格式：OpenAI 兼容 / Anthropic / Gemini（自动探测路由）。
+
+两种方式可叠加：代理负责「拿全对话流」，MCP / hook 负责「推回去」，互为冗余防线。
+代理的全部外联仅发生在用户显式启动并指定上游之后；核心记忆库默认零外联。
+
 ## 设计宪法（十条，摘要）
 
 1. 摘要是解释，全文是证据——L3 全文库是唯一无损层
@@ -34,7 +57,7 @@ Continuum 用四道机制化防线对抗：落库扳机（L3 原文无损层）�
 | Linux (x86_64) | ✅ CI 矩阵实测（GitHub Actions，push 自动跑） |
 | macOS (arm64) | ✅ CI 矩阵实测（GitHub Actions，push 自动跑） |
 
-纯 Python 3.13 标准库实现（零第三方核心依赖、零 C 扩展、零网络调用），SQLite 由 Python 内置。
+纯 Python 3.13 标准库实现（零第三方核心依赖、零 C 扩展）；核心记忆库默认零外联，仅代理与判官（BYOK）模块按用户显式配置联网。SQLite 由 Python 内置。
 
 ## 开发
 

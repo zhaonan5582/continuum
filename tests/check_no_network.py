@@ -13,14 +13,18 @@ from pathlib import Path
 
 BAD_KEYWORDS = ("urllib", "requests", "httpx", "socket", "http.client", "urllib3", "websocket")
 
+# 白名单目录（与 test_commercial.py::TestZeroNetwork 同一契约，两处必须同步修改）：
+# - judges/：BYOK 可选模块——仅当用户显式配置 endpoint+key 才外联
+# - proxy/：LLM API 透明代理——仅当用户显式启动 `continuum proxy --target <上游>` 才外联
+# 两者文件头均标记 BYOK-USER-INITIATED-NETWORK。核心本体（存储/收敛/召回）仍然零外联。
+WHITELIST_DIRS = {"judges", "proxy"}
+
 
 def main() -> int:
     src = Path(__file__).resolve().parents[1] / "src" / "continuum"
     offenders: list[str] = []
     for p in sorted(src.rglob("*.py")):
-        # 白名单：judges/ 目录是 BYOK 可选模块——仅当用户显式配置 endpoint+key 才外联
-        #（文件头标记 BYOK-USER-INITIATED-NETWORK）。核心本体仍然零外联。
-        if "judges" in p.parts:
+        if any(w in p.parts for w in WHITELIST_DIRS):
             continue
         text = p.read_text(encoding="utf-8")
         for kw in BAD_KEYWORDS:

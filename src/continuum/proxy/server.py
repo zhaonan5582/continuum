@@ -4,6 +4,9 @@
 
 零第三方依赖（http.server + urllib.request）。
 宿主把 LLM base_url 指向 http://127.0.0.1:{port}/v1 即完成接入。
+
+BYOK-USER-INITIATED-NETWORK：本模块的全部外联都发生在用户显式启动
+`continuum proxy --target <上游>` 之后，转发目标完全由用户指定；核心存储层零外联。
 """
 
 from __future__ import annotations
