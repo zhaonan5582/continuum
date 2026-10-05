@@ -5,6 +5,9 @@
 *.bat text eol=crlf
 *.ps1 text eol=crlf
 
+# Shell scripts always LF (跨平台：Linux/macOS 不接受 CRLF 的 shebang)
+*.sh text eol=lf
+
 # Binaries
 *.png binary
 *.jpg binary

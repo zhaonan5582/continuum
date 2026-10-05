@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / py${{ matrix.python-version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.13"]
+    runs-on: ${{ matrix.os }}
+    env:
+      PYTHONPATH: src
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Zero-dependency sanity check
+        run: python -c "import continuum; print('version', continuum.VERSION)"
+
+      - name: Full test suite (unittest, zero-dependency)
+        run: python -m unittest discover -s tests -v
+
+      - name: Privacy check — no network libraries in core
+        run: python tests/check_no_network.py

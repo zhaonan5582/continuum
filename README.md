@@ -25,3 +25,22 @@ Continuum 用四道机制化防线对抗：落库扳机（L3 原文无损层）�
 ## 许可
 
 核心：AGPL-3.0-only（见 LICENSE / NOTICE）。Pro 模块与托管服务不在本仓库。
+
+## 平台支持
+
+| 平台 | 状态 |
+|------|------|
+| Windows 10/11 | ✅ 开发与全量测试平台 |
+| Linux (x86_64) | ✅ CI 矩阵实测（GitHub Actions，push 自动跑） |
+| macOS (arm64) | ✅ CI 矩阵实测（GitHub Actions，push 自动跑） |
+
+纯 Python 3.13 标准库实现（零第三方核心依赖、零 C 扩展、零网络调用），SQLite 由 Python 内置。
+
+## 开发
+
+```bash
+# 全量测试（零依赖）
+python -m unittest discover -s tests -v     # Windows 用 PYTHONPATH=src
+# 隐私承诺检查（零外联验证）
+python tests/check_no_network.py
+```
