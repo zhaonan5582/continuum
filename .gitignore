@@ -30,3 +30,6 @@ Thumbs.db
 .env.*
 secrets/
 pro/
+job*.log
+jobs*.json
+runcheck.json
