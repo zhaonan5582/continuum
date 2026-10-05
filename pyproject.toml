@@ -15,6 +15,9 @@ authors = [{ name = "Continuum contributors" }]
 # MCP server 装配（P1）与向量索引（P3）依赖另行声明，不进核心。
 dependencies = []
 
+[project.scripts]
+continuum = "continuum.cli:main"
+
 [project.optional-dependencies]
 # P1: mcp = ["mcp>=1.0"]  # 冻结于 P1 启动时
 # P3: vectors = ["sqlite-vec", "fastembed"]
