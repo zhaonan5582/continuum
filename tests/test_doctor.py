@@ -6,6 +6,7 @@ from __future__ import annotations
 import io
 import json
 import sys
+import tempfile
 import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
@@ -23,10 +24,14 @@ class TestCheckConfigFiles(unittest.TestCase):
     def setUp(self):
         self._orig_json = doctor.WORKBUDDY_MCP_JSON
         self._orig_toml = doctor.CODEX_CONFIG_TOML
+        # 假文件写临时目录——绝不碰真实 home（CI runner 无 ~/.workbuddy，2026-10-05 run#22 教训）
+        self._td = tempfile.TemporaryDirectory()
+        self._tmp = Path(self._td.name)
 
     def tearDown(self):
         doctor.WORKBUDDY_MCP_JSON = self._orig_json
         doctor.CODEX_CONFIG_TOML = self._orig_toml
+        self._td.cleanup()
 
     def _run(self) -> str:
         buf = io.StringIO()
@@ -35,32 +40,29 @@ class TestCheckConfigFiles(unittest.TestCase):
         return buf.getvalue()
 
     def test_valid_entry_detected(self):
-        p = Path(self._orig_json.parent, "test_valid.json")
+        p = self._tmp / "test_valid.json"
         p.write_text(json.dumps({"mcpServers": {"continuum": {
             "command": "python", "args": ["-m", "continuum.cli", "serve"]}}}),
             encoding="utf-8")
         doctor.WORKBUDDY_MCP_JSON = p
-        doctor.CODEX_CONFIG_TOML = Path(self._orig_toml.parent, "nonexistent.toml")
+        doctor.CODEX_CONFIG_TOML = self._tmp / "nonexistent.toml"
         out = self._run()
-        p.unlink()
         self.assertIn("continuum 条目存在", out)
 
     def test_missing_entry_reported(self):
-        p = Path(self._orig_json.parent, "test_empty.json")
+        p = self._tmp / "test_empty.json"
         p.write_text(json.dumps({"mcpServers": {}}), encoding="utf-8")
         doctor.WORKBUDDY_MCP_JSON = p
-        doctor.CODEX_CONFIG_TOML = Path(self._orig_toml.parent, "nonexistent.toml")
+        doctor.CODEX_CONFIG_TOML = self._tmp / "nonexistent.toml"
         out = self._run()
-        p.unlink()
         self.assertIn("无 continuum 条目", out)
 
     def test_broken_json_reported(self):
-        p = Path(self._orig_json.parent, "test_broken.json")
+        p = self._tmp / "test_broken.json"
         p.write_text("{broken", encoding="utf-8")
         doctor.WORKBUDDY_MCP_JSON = p
-        doctor.CODEX_CONFIG_TOML = Path(self._orig_toml.parent, "nonexistent.toml")
+        doctor.CODEX_CONFIG_TOML = self._tmp / "nonexistent.toml"
         out = self._run()
-        p.unlink()
         self.assertIn("JSON 解析失败", out)
 
 
