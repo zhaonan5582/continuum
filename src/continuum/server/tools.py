@@ -307,16 +307,16 @@ class ContinuumServer:
 
     # ---- P2 · 已实装 ----
     def memory_assemble(self, project_id: str | None = None) -> AssemblePackage:
-        """冷启动装配包（第一防线）：persona 占位（P3）+ L0 + 当前项目 L1 + 最近现场。
+        """冷启动装配包（第一防线）：persona 最新版 + L0 + 当前项目 L1 + 最近现场。
         总预算 ≤8K token，超预算按「最近现场 → 事实」顺序剪（红线/决策/约定不动）。"""
         from continuum.snapshot import estimate_tokens, materialize_l0, materialize_l1
 
+        persona_md = self.persona_current_md()
         l0 = materialize_l0(self.be)
         l1 = materialize_l1(self.be, project_id)
         recent_rows = self.be.fetch_messages_since(None, limit=20)
         recent = tuple(m.content for _, m in recent_rows)
 
-        persona_md = "（人格引擎于 P3 上线；当前协作规则见 L0/L1）"
         parts_used = estimate_tokens(persona_md) + estimate_tokens(l0) + estimate_tokens(l1)
         warnings: list[str] = []
         kept_recent: list[str] = []
@@ -363,6 +363,32 @@ class ContinuumServer:
         })
         return plan
 
-    # ---- P3 · 契约 stub ----
+    # ---- P3 · 已实装 ----
     def memory_guard(self, operation: Operation) -> GuardVerdict:
-        raise FeatureNotAvailable("memory_guard", self.PHASES["memory_guard"])
+        """红线门禁（宪法 6：hook 管「不能违反」）。命中即审计（F3 种子数据）。
+        判定顺序：block > ask > warn（最严者生效）。"""
+        matched = self.be.match_redlines(operation.target,
+                                         project_id=operation.detail.get("project_id"))
+        if not matched:
+            verdict, reason, ids = "allow", "无命中红线", ()
+        else:
+            ids = tuple(r["id"] for r in matched)
+            actions = [r["action"] for r in matched]
+            if "block" in actions:
+                verdict = "block"
+                reason = "命中 block 红线: " + "; ".join(
+                    r["statement"] for r in matched if r["action"] == "block")[:200]
+            elif "ask" in actions:
+                verdict, reason = "ask", "命中 ask 红线，需人工确认"
+            else:
+                verdict, reason = "warn", "命中 warn 红线"
+        self.be.audit("core", "guard", operation.target[:120],
+                      {"verdict": verdict, "matched": list(ids), "kind": operation.kind})
+        return GuardVerdict(verdict=verdict, matched_redlines=ids, reason=reason)
+
+    def persona_current_md(self) -> str:
+        """最新人格状态块文本（assemble 数据源；无版本返回占位）。"""
+        cur = self.be.persona_current()
+        if cur is None:
+            return "（人格引擎于 P3 上线；当前协作规则见 L0/L1）"
+        return f"<!-- persona v{cur['version']} -->\n{cur['snapshot_md']}"

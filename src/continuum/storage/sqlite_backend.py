@@ -352,6 +352,88 @@ class SQLiteBackend(StorageBackend):
         ).fetchall()
         return [dict(r) for r in rows], total
 
+    # ---- persona（版本化状态块，P3）----
+
+    def persona_current(self) -> dict | None:
+        """最新人格状态块（无版本时返回 None——assemble 用占位文本）。"""
+        r = self.conn.execute(
+            "SELECT id, version, snapshot_md, created_at, change_reason"
+            " FROM persona_versions ORDER BY version DESC LIMIT 1"
+        ).fetchone()
+        return dict(r) if r else None
+
+    def persona_create(self, snapshot_md: str, change_reason: str,
+                       parent_version: int | None = None) -> int:
+        row = self.conn.execute("SELECT COALESCE(MAX(version),0)+1 AS v FROM persona_versions").fetchone()
+        ver = int(row["v"])
+        cur = self.conn.execute(
+            "INSERT INTO persona_versions(version, snapshot_md, parent_version, change_reason, created_at)"
+            " VALUES(?,?,?,?,?)",
+            (ver, snapshot_md, parent_version, change_reason, now_iso()),
+        )
+        ver_id = int(cur.lastrowid)
+        self.audit("core", "persona.create", f"persona/v{ver}", {"reason": change_reason})
+        return ver_id
+
+    def persona_add_sample(self, persona_version: int, user_utterance: str,
+                           agent_response: str, tag: str | None = None,
+                           source_message_id: int | None = None) -> int:
+        cur = self.conn.execute(
+            "INSERT INTO persona_samples(persona_version, user_utterance, agent_response,"
+            " source_message_id, tag) VALUES(?,?,?,?,?)",
+            (persona_version, user_utterance, agent_response, source_message_id, tag),
+        )
+        return int(cur.lastrowid)
+
+    def persona_samples(self, persona_version: int | None = None, limit: int = 100) -> list[dict]:
+        where, params = "", []
+        if persona_version is not None:
+            where = "WHERE persona_version = ?"
+            params.append(persona_version)
+        rows = self.conn.execute(
+            f"SELECT * FROM persona_samples {where} ORDER BY id DESC LIMIT ?",
+            [*params, limit],
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    # ---- redlines（红线表：逐字存储 + 正反测试集）----
+
+    def add_redline(self, pattern: str, statement: str, action: str = "block",
+                    scope: str = "global", source_memory_id: int | None = None) -> int:
+        if action not in ("block", "warn", "ask"):
+            raise ValueError(f"action 非法: {action}")
+        cur = self.conn.execute(
+            "INSERT INTO redlines(pattern, scope, action, statement, source_memory_id, enabled)"
+            " VALUES(?,?,?,?,?,1)",
+            (pattern, scope, action, statement, source_memory_id),
+        )
+        rid = int(cur.lastrowid)
+        self.audit("core", "redline.add", f"redlines/{rid}", {"pattern": pattern, "action": action})
+        return rid
+
+    def add_redline_test(self, redline_id: int, case_type: str, sample_target: str,
+                         expected_action: str, sample_detail: str | None = None) -> int:
+        if case_type not in ("positive", "negative"):
+            raise ValueError(f"case_type 非法: {case_type}")
+        cur = self.conn.execute(
+            "INSERT INTO redline_tests(redline_id, case_type, sample_target, sample_detail, expected_action)"
+            " VALUES(?,?,?,?,?)",
+            (redline_id, case_type, sample_target, sample_detail, expected_action),
+        )
+        return int(cur.lastrowid)
+
+    def match_redlines(self, target: str, project_id: str | None = None) -> list[sqlite3.Row]:
+        """guard 数据查询：enabled 红线中匹配 target 的（pattern 子串 + scope 兼容）。"""
+        rows = self.conn.execute("SELECT * FROM redlines WHERE enabled=1").fetchall()
+        out = []
+        for r in rows:
+            scope = r["scope"]
+            if scope.startswith("project:") and scope.split(":", 1)[1] != (project_id or ""):
+                continue
+            if r["pattern"] in target:
+                out.append(r)
+        return out
+
     # ---- backup（商业化：用户记忆是唯一副本，必须有官方备份通道）----
     def backup_to(self, dest_path: str | Path) -> int:
         """在线一致备份到目标文件（SQLite backup API，期间可继续写入）。返回目标页数。"""

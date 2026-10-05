@@ -30,6 +30,18 @@ def _msg(content="c", role="user"):
     return UDFMessage(ts="2026-10-05T10:00:00.000Z", role=role, host="w", session_id="s", content=content)
 
 
+def _minimal_arg(name: str):
+    """为 no-stub 断言构造最小合法参数。"""
+    return {
+        "memory_extract": ExtractScope(),
+        "memory_recall": "测试",
+        "memory_audit": AuditQuery(),
+        "memory_compact": CompactRange(session_id=1, from_seq=0, to_seq=1),
+        "memory_assemble": None,
+        "memory_guard": Operation(kind="write", target="x"),
+    }.get(name)
+
+
 class TestSevenToolsContract(unittest.TestCase):
     def setUp(self):
         self.be = SQLiteBackend(":memory:", MIGRATIONS)
@@ -59,12 +71,21 @@ class TestSevenToolsContract(unittest.TestCase):
         self.assertEqual((r2.accepted, r2.skipped), (0, 1))
         self.assertEqual(r2.session_id, r.session_id)
 
-    def test_phase_stubs_are_honest(self):
-        """未到期的工具必须诚实报错且携带期次——不静默装死。
-        （v1.5 更新：memory_assemble 已随 P2-b 实装，stub 清单只剩 memory_guard。）"""
-        with self.assertRaises(FeatureNotAvailable) as cm:
-            self.srv.memory_guard(Operation(kind="write", target="x"))
-        self.assertIn("P3", str(cm.exception))
+    def test_no_stubs_remain(self):
+        """v1.6：七工具全部实装——任何工具调用都不应再抛 FeatureNotAvailable。"""
+        for name in ContinuumServer.PHASES:
+            fn = getattr(self.srv, name)
+            try:
+                if name == "memory_append":
+                    fn(AppendRequest(host_agent="w", external_session_id="s", messages=(_msg(),)))
+                elif name == "memory_assemble":
+                    fn()
+                elif name == "memory_recall":
+                    fn("测试")
+                else:
+                    fn(_minimal_arg(name))
+            except FeatureNotAvailable:
+                self.fail(f"{name} 仍在抛 FeatureNotAvailable——stub 未清除")
 
     def test_p1p2_tools_no_longer_stub(self):
         """已实装工具的回退防护：防止未来误回退成 stub。"""

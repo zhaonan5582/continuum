@@ -24,6 +24,11 @@ EXPECTED_TABLES = {
     "edges",
     "mem_mentions",
     "audit_log",
+    # 0002：P3 persona + guard
+    "persona_versions",
+    "persona_samples",
+    "redlines",
+    "redline_tests",
 }
 
 
@@ -37,8 +42,8 @@ class TestSchemaMigration(unittest.TestCase):
 
     def test_migrate_creates_all_core_tables(self):
         applied = runner.migrate(self.conn, MIGRATIONS)
-        self.assertEqual(applied, ["0001_core.sql"])
-        self.assertEqual(runner.schema_version(self.conn), 1)
+        self.assertEqual(applied, ["0001_core.sql", "0002_persona_guard.sql"])
+        self.assertEqual(runner.schema_version(self.conn), 2)
         tables = {
             r["name"]
             for r in self.conn.execute("SELECT name FROM sqlite_master WHERE type IN ('table','view')")
@@ -51,10 +56,15 @@ class TestSchemaMigration(unittest.TestCase):
         applied_again = runner.migrate(self.conn, MIGRATIONS)
         self.assertEqual(applied_again, [], "重复迁移应跳过已应用项")
 
+    def test_migrate_applies_both(self):
+        applied = runner.migrate(self.conn, MIGRATIONS)
+        self.assertEqual(applied, ["0001_core.sql", "0002_persona_guard.sql"])
+        self.assertEqual(runner.schema_version(self.conn), 2)
+
     def test_migration_gap_rejected(self):
-        # 直接把 user_version 拉到 2，0001 就成了"断裂"——必须拒绝而非静默跳过
+        # 库比代码新（user_version=3 > 最高迁移 2）——必须拒绝而非静默跳过
         self.conn.executescript(
-            "CREATE TABLE fake(x); PRAGMA user_version = 2;"
+            "CREATE TABLE fake(x); PRAGMA user_version = 3;"
         )
         with self.assertRaises(runner.MigrationError):
             runner.migrate(self.conn, MIGRATIONS)
