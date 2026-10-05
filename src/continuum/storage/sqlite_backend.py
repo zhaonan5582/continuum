@@ -189,7 +189,7 @@ class SQLiteBackend(StorageBackend):
         try:
             rows = self.conn.execute(
                 "SELECT m.id, m.session_id, m.role, m.ts, m.content,"
-                " snippet(messages_fts, 0, '<<', '>>', '…', 24) AS snip"
+                " snippet(messages_fts, 0, '<<', '>>', '…', 64) AS snip"
                 " FROM messages_fts f JOIN messages m ON m.id = f.rowid"
                 " WHERE messages_fts MATCH ? ORDER BY rank LIMIT ?",
                 (match_expr, limit),

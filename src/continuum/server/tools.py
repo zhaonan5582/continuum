@@ -285,8 +285,11 @@ class ContinuumServer:
                     if key in seen:
                         continue
                     seen.add(key)
+                    # snippet（FTS 高亮命中位置）优先——盲截 content[:200] 会把
+                    # 长前置（@image 串/注入头）后的真正命中裁掉（规模实测缺陷）
+                    statement = h.get("snip") or h["content"][:200]
                     results.append(RecallItem(
-                        memory_id=-h["id"], statement=h["content"][:200], kind="verbatim",
+                        memory_id=-h["id"], statement=statement, kind="verbatim",
                         evidence_level="cited", stated_by="user",
                         source_message_id=h["id"], ts=h["ts"], score=0.3,
                     ))
