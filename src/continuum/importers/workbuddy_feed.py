@@ -25,6 +25,7 @@ from pathlib import Path
 
 from continuum.importers.workbuddy import (
     _content_to_text,
+    _dialog_ts,
     _ms_to_iso,
     _strip_injections,
 )
@@ -180,13 +181,8 @@ class WorkbuddyFeed:
                 d = json.loads(raw.decode("utf-8", errors="replace"))
             except json.JSONDecodeError:
                 continue
-            if d.get("type") != "message":
-                continue
-            provider = d.get("providerData") or {}
-            if provider.get("isCompactInternal") or provider.get("isMeta"):
-                continue
-            ts_ms = d.get("timestamp")
-            if not isinstance(ts_ms, int):
+            ts_ms = _dialog_ts(d)      # 单源判定：type/内部标记（含 skipRun 中断行）/时间戳
+            if ts_ms is None:
                 continue
             text = _strip_injections(_content_to_text(d.get("content")))
             if not text.strip():

@@ -118,6 +118,26 @@ class TestWorkbuddyFeed(unittest.TestCase):
         self.assertEqual(r.new_messages, 1)
         self.assertEqual(feed._calls_since_sweep, 0)          # 节律已重置
 
+    def test_interrupted_line_filtered(self):
+        """skipRun 中断行（真实形态：providerData.skipRun=true + status=incomplete）
+        是控制标记不是话语——不得混进「最近现场」（楠哥 2026-10-06 实测抓到）。"""
+        f = self.proj / "sess-int.jsonl"
+        interrupted = json.dumps({
+            "type": "message", "role": "assistant",
+            "timestamp": int(time.time() * 1000),
+            "content": [{"type": "output_text", "text": "Interrupted by user"}],
+            "status": "incomplete",
+            "providerData": {"skipRun": True,
+                             "error": {"message": "Interrupted by user"}},
+        }, ensure_ascii=False)
+        f.write_text(_msg_line("正常话语") + "\n" + interrupted + "\n", encoding="utf-8")
+        feed = self._make_feed(initialized_at=time.time() - 3600)
+        r = feed.sweep_now()
+        self.assertEqual(r.new_messages, 1)     # 只有正常话语入库
+        sid = self.be.ensure_session("workbuddy", "sess-int")
+        rows = self.be.list_session_messages_with_ids(sid, limit=10)
+        self.assertFalse(any("Interrupted" in row[1].content for row in rows))
+
     def test_sweep_failure_does_not_raise(self):
         """喂食失败绝不向调用方抛异常（宿主工具调用不受影响）。"""
         feed = self._make_feed(initialized_at=time.time() - 3600)

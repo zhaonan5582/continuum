@@ -59,6 +59,24 @@ _INJECT_RE = re.compile(
 )
 
 
+def _dialog_ts(d: dict) -> int | None:
+    """对话正文行判定 + 取毫秒时间戳（单源：导入器与增量喂食器共用）。
+
+    字段级精准过滤（非启发式）：
+    - type=message 才是对话正文（reasoning/function_call*/file-history-snapshot 等跳过）；
+    - providerData.isCompactInternal=压缩摘要行 / isMeta=continuation 元消息 /
+      skipRun=被中断的空跑（如「Interrupted by user」）——均非用户话语；
+    - timestamp 必须是毫秒整数。
+    非正文行返回 None。"""
+    if d.get("type") != "message":
+        return None
+    provider = d.get("providerData") or {}
+    if provider.get("isCompactInternal") or provider.get("isMeta") or provider.get("skipRun"):
+        return None
+    ts_ms = d.get("timestamp")
+    return ts_ms if isinstance(ts_ms, int) else None
+
+
 def _strip_injections(text: str) -> str:
     """剥离宿主注入的元数据块（system-reminder/user_query 标记等）。
     这些是宿主运行时注入，不是用户话语——记忆层只存用户真实内容。"""
@@ -97,17 +115,8 @@ def import_workbuddy_session(
             except json.JSONDecodeError:
                 skipped_non_message += 1
                 continue
-            if d.get("type") != "message":
-                skipped_non_message += 1
-                continue
-            # 宿主内部消息过滤（字段级精准，非启发式猜测）：
-            # isCompactInternal=压缩摘要行 / isMeta=continuation 与元消息——都不是用户话语
-            provider = d.get("providerData") or {}
-            if provider.get("isCompactInternal") or provider.get("isMeta"):
-                skipped_non_message += 1
-                continue
-            ts_ms = d.get("timestamp")
-            if not isinstance(ts_ms, int):
+            ts_ms = _dialog_ts(d)
+            if ts_ms is None:
                 skipped_non_message += 1
                 continue
             text = _strip_injections(_content_to_text(d.get("content")))
