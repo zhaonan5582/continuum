@@ -83,14 +83,16 @@ def cmd_persona_version(args) -> int:
 
 def cmd_persona_current(args) -> int:
     be = _open_backend(args.db)
-    cur = be.persona_current()
-    if cur is None:
-        print("（无人格版本）")
-        return 1
-    print(f"== persona v{cur['version']}（{cur['created_at']}，{cur['change_reason']}）==")
-    print(cur["snapshot_md"])
-    be.close()
-    return 0
+    try:
+        cur = be.persona_current()
+        if cur is None:
+            print("（无人格版本）")
+            return 1
+        print(f"== persona v{cur['version']}（{cur['created_at']}，{cur['change_reason']}）==")
+        print(cur["snapshot_md"])
+        return 0
+    finally:
+        be.close()
 
 
 # ---------- import / backup ----------
