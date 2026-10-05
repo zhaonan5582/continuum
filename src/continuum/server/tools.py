@@ -148,6 +148,33 @@ class FeatureNotAvailable(NotImplementedError):
         self.phase = phase
 
 
+# ---------- 中文相对时间解析（recall time_hint，P1 简版） ----------
+
+import re as _re  # noqa: E402
+from datetime import datetime, timedelta, timezone as _tz  # noqa: E402
+
+
+def _parse_time_hint(hint: str) -> str | None:
+    """把「今天/昨天/前天/上周/上个月/最近一周/N天前」解析为 from_ts（ISO8601 UTC）。
+    无法识别返回 None（不影响检索，仅退化为不限时间）。"""
+    hint = (hint or "").strip()
+    if not hint:
+        return None
+    now = datetime.now(_tz.utc)
+
+    def _iso(days_ago: int) -> str:
+        return (now - timedelta(days=days_ago)).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+    m = _re.match(r"^(\d+)\s*天前$", hint)
+    if m:
+        return _iso(int(m.group(1)))
+    table = {"今天": 0, "今天内": 0, "昨天": 1, "前天": 2, "最近一周": 0, "本周": 0,
+             "上周": 7, "最近一月": 0, "上个月": 31, "最近一个月": 0}
+    if hint in table:
+        return _iso(table[hint])
+    return None
+
+
 # ---------- Server（7 工具挂载点） ----------
 
 
@@ -177,15 +204,85 @@ class ContinuumServer:
         ids, skipped = self.be.append_messages(sid, list(req.messages))
         return AppendResult(session_id=sid, accepted=len(ids), skipped=skipped, message_ids=tuple(ids))
 
-    # ---- P1 · 契约 stub ----
     def memory_extract(self, scope: ExtractScope) -> ExtractResult:
-        raise FeatureNotAvailable("memory_extract", self.PHASES["memory_extract"])
+        """轨道 B / sweeping 的沉淀动作（无 judge 模式：中文启发式，全量 inferred+pending）。"""
+        import time as _time
+
+        from continuum.extract import run_extraction  # 延迟导入保持 server 层轻
+
+        t0 = _time.perf_counter()
+        if scope.session_id is not None:
+            rows = self.be.list_session_messages_with_ids(scope.session_id, limit=200)
+        else:
+            rows = self.be.fetch_messages_since(scope.since_ts, limit=200)
+        produced, _, scanned = run_extraction(self.be, scope.session_id, rows)
+        latency = round((_time.perf_counter() - t0) * 1000, 1)
+        self.be.audit("core", "extract.done", f"sessions/{scope.session_id}",
+                      {"produced": produced, "scanned": scanned, "ms": latency})
+        return ExtractResult(produced_active=0, produced_pending=produced, scanned_messages=scanned)
 
     def memory_recall(self, query: str, time_hint: str | None = None, limit: int = 20) -> RecallResult:
-        raise FeatureNotAvailable("memory_recall", self.PHASES["memory_recall"])
+        """快速路径（无 judge）：结构化过滤主力（memories 逐词匹配 + 类型/时间过滤）
+        + FTS 原文兜底。user-stated 优先。停止条件 = 无 judge 固定单轮（增强模式 P2）。"""
+        import re as _re
+        import time as _time
+
+        t0 = _time.perf_counter()
+        time_from = _parse_time_hint(time_hint) if time_hint else None
+
+        # 查询词提取：整串 + 高频滑窗（中文 LIKE 需要短语粒度）
+        chunks = [c for c in _re.split(r"[^\w\u4e00-\u9fff]+", query) if len(c) >= 2]
+        terms: list[str] = []
+        for c in chunks[:4]:
+            if c not in terms:
+                terms.append(c)
+            if len(c) >= 4:                       # 长串切 2 字滑窗提升召回
+                for i in range(len(c) - 1):
+                    g = c[i:i + 2]
+                    if g not in terms and not _re.match(r"^[\d_]+$", g):
+                        terms.append(g)
+        terms = terms[:10]
+
+        results: list[RecallItem] = []
+        seen: set = set()
+        if terms:
+            for r in self.be.search_memories(terms, time_from=time_from, limit=limit):
+                if r["id"] in seen:
+                    continue
+                seen.add(r["id"])
+                results.append(RecallItem(
+                    memory_id=r["id"], statement=r["statement"], kind=r["kind"],
+                    evidence_level=r["evidence_level"], stated_by=r["stated_by"],
+                    source_message_id=r["source_message_id"], ts=r["created_at"],
+                    score=1.0 if r["stated_by"] == "user" else 0.6,
+                ))
+            for term in terms:
+                if len(term) < 3:                  # FTS trigram 需 ≥3 字符
+                    continue
+                for h in self.be.search_content(term, limit=limit):
+                    key = ("m", h["id"])
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    results.append(RecallItem(
+                        memory_id=-h["id"], statement=h["content"][:200], kind="verbatim",
+                        evidence_level="cited", stated_by="user",
+                        source_message_id=h["id"], ts=h["ts"], score=0.3,
+                    ))
+        results.sort(key=lambda i: i.score, reverse=True)
+        results = results[:limit]
+        latency = round((_time.perf_counter() - t0) * 1000, 1)
+        self.be.audit("core", "recall", query[:80],
+                      {"hits": len(results), "ms": latency, "mode": "fast-path"})
+        return RecallResult(items=tuple(results), rounds_used=1,
+                            latency_ms=latency, stopped_by="no-judge-fast-path")
 
     def memory_audit(self, query: AuditQuery) -> AuditResult:
-        raise FeatureNotAvailable("memory_audit", self.PHASES["memory_audit"])
+        entries, total = self.be.audit_query(
+            action=query.action, target_like=query.target_like,
+            since_ts=query.since_ts, limit=query.limit,
+        )
+        return AuditResult(entries=tuple(entries), total_matched=total)
 
     # ---- P2 · 契约 stub ----
     def memory_compact(self, rng: CompactRange) -> CompactPlan:

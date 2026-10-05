@@ -13,6 +13,7 @@ from typing import Iterator
 from continuum.storage.backend import StorageBackend
 from continuum.storage.migrations import runner
 from continuum.udf import UDFMessage, now_iso
+from continuum.version import DESIGN_CONSTANTS
 
 
 def _sha256(s: str) -> str:
@@ -135,6 +136,44 @@ class SQLiteBackend(StorageBackend):
                 content=r["content"],
             )
 
+    def list_session_messages_with_ids(self, session_id: int, limit: int = 200) -> list[tuple[int, UDFMessage]]:
+        rows = self.conn.execute(
+            "SELECT id, ts, role, host, session_id, content FROM messages"
+            " WHERE session_id=? ORDER BY seq LIMIT ?",
+            (session_id, limit),
+        ).fetchall()
+        return [
+            (
+                int(r["id"]),
+                UDFMessage(ts=r["ts"], role=r["role"], host=r["host"],
+                           session_id=str(session_id), content=r["content"]),
+            )
+            for r in rows
+        ]
+
+    def fetch_messages_since(self, since_ts: str | None = None, limit: int = 200) -> list[tuple[int, UDFMessage]]:
+        if since_ts:
+            rows = self.conn.execute(
+                "SELECT id, ts, role, host, session_id, content FROM messages"
+                " WHERE ts >= ? ORDER BY ts LIMIT ?",
+                (since_ts, limit),
+            ).fetchall()
+        else:
+            rows = self.conn.execute(
+                "SELECT id, ts, role, host, session_id, content FROM messages"
+                " ORDER BY ts DESC LIMIT ?",
+                (limit,),
+            ).fetchall()
+            rows = list(reversed(rows))
+        return [
+            (
+                int(r["id"]),
+                UDFMessage(ts=r["ts"], role=r["role"], host=r["host"],
+                           session_id=str(r["session_id"]), content=r["content"]),
+            )
+            for r in rows
+        ]
+
     def search_content(self, query: str, limit: int = 20) -> list[dict]:
         """FTS5 trigram 检索（中文兜底通道；结构化主力在 P1 entities/mentions）。
 
@@ -159,6 +198,146 @@ class SQLiteBackend(StorageBackend):
             (now_iso(), actor, action, target, json.dumps(detail or {}, ensure_ascii=False)),
         )
         return int(cur.lastrowid)
+
+    # ---- memories / entities / mentions（P1 轨道 B 写入路径）----
+
+    def find_or_create_entity(
+        self,
+        kind: str,
+        name: str,
+        canonical_name: str | None = None,
+        aliases: list[str] | None = None,
+    ) -> tuple[int, bool]:
+        """实体消歧（docs/01 §5.1：先查相似→挂 alias，无命中才新建）。
+        匹配顺序：exact(kind+canonical) → exact(kind+name) → alias 命中。
+        返回 (entity_id, created)。"""
+        canon = canonical_name or name
+        row = self.conn.execute(
+            "SELECT id FROM entities WHERE kind=? AND canonical_name=?", (kind, canon)
+        ).fetchone()
+        if row:
+            eid = int(row["id"])
+            if aliases:
+                self._merge_aliases(eid, aliases)
+            return eid, False
+        row = self.conn.execute(
+            "SELECT id FROM entities WHERE kind=? AND name=?", (kind, name)
+        ).fetchone()
+        if row:
+            eid = int(row["id"])
+            if aliases:
+                self._merge_aliases(eid, aliases)
+            return eid, False
+        alias_json = json.dumps(sorted(set(aliases or []) | {name}), ensure_ascii=False)
+        cur = self.conn.execute(
+            "INSERT INTO entities(kind, name, canonical_name, aliases_json, created_at)"
+            " VALUES(?,?,?,?,?)",
+            (kind, name, canon, alias_json, now_iso()),
+        )
+        return int(cur.lastrowid), True
+
+    def _merge_aliases(self, entity_id: int, aliases: list[str]) -> None:
+        row = self.conn.execute("SELECT aliases_json FROM entities WHERE id=?", (entity_id,)).fetchone()
+        current = set(json.loads(row["aliases_json"]))
+        merged = json.dumps(sorted(current | set(aliases)), ensure_ascii=False)
+        self.conn.execute("UPDATE entities SET aliases_json=? WHERE id=?", (merged, entity_id))
+
+    def add_memory(
+        self,
+        *,
+        kind: str,
+        statement: str,
+        stated_by: str,
+        source_message_id: int | None,
+        session_id: int | None,
+        evidence_level: str = "inferred",
+        status: str = "pending",
+        valid_until: str | None = None,
+    ) -> int:
+        """写入记忆条目。四强制字段在此集中强制（宪法 2）：
+        source_message_id / created_at / evidence_level / valid_from——缺一在此抛错。
+        statement 为空串同样拒绝（空记忆比没有记忆更坏）。"""
+        if not statement or not statement.strip():
+            raise ValueError("statement 不能为空（空记忆拒绝写入）")
+        if evidence_level not in DESIGN_CONSTANTS["EVIDENCE_LEVELS"]:
+            raise ValueError(f"evidence_level 非法: {evidence_level}")
+        if kind not in DESIGN_CONSTANTS["MEMORY_KINDS"]:
+            raise ValueError(f"kind 非法: {kind}")
+        if stated_by not in ("user", "agent"):
+            raise ValueError(f"stated_by 非法: {stated_by}")
+        if source_message_id is None:
+            raise ValueError("source_message_id 缺失——无来源指针的记忆不许写入（宪法 2）")
+        ts = now_iso()
+        cur = self.conn.execute(
+            "INSERT INTO memories"
+            " (kind, statement, source_message_id, session_id, stated_by, evidence_level,"
+            "  created_at, valid_from, valid_until, status)"
+            " VALUES(?,?,?,?,?,?,?,?,?,?)",
+            (kind, statement.strip(), source_message_id, session_id, stated_by,
+             evidence_level, ts, ts, valid_until, status),
+        )
+        return int(cur.lastrowid)
+
+    def record_mention(self, message_id: int, entity_id: int,
+                       span_start: int | None = None, span_end: int | None = None) -> None:
+        self.conn.execute(
+            "INSERT OR IGNORE INTO mem_mentions(message_id, entity_id, span_start, span_end)"
+            " VALUES(?,?,?,?)",
+            (message_id, entity_id, span_start, span_end),
+        )
+
+    def search_memories(
+        self,
+        terms: list[str],
+        kind: str | None = None,
+        time_from: str | None = None,
+        time_to: str | None = None,
+        limit: int = 20,
+    ) -> list[sqlite3.Row]:
+        """结构化过滤主力（§5.3）：statement 逐词 LIKE + 类型/时间过滤 + user-stated 优先。
+        空词列表返回空（避免全表扫描）。"""
+        terms = [t for t in terms if t]
+        if not terms:
+            return []
+        conds = ["status != 'quarantined'"] + ["statement LIKE ?" for _ in terms]
+        params: list = [f"%{t}%" for t in terms]
+        if kind:
+            conds.append("kind = ?")
+            params.append(kind)
+        if time_from:
+            conds.append("created_at >= ?")
+            params.append(time_from)
+        if time_to:
+            conds.append("created_at <= ?")
+            params.append(time_to)
+        params.append(limit)
+        return self.conn.execute(
+            "SELECT * FROM memories WHERE " + " AND ".join(conds) +
+            " ORDER BY CASE stated_by WHEN 'user' THEN 0 ELSE 1 END, created_at DESC LIMIT ?",
+            params,
+        ).fetchall()
+
+    # ---- audit 查询（memory_audit 数据源）----
+    def audit_query(self, action: str | None = None, target_like: str | None = None,
+                    since_ts: str | None = None, limit: int = 50) -> tuple[list[dict], int]:
+        conds, params = [], []
+        if action:
+            conds.append("action = ?")
+            params.append(action)
+        if target_like:
+            conds.append("target LIKE ?")
+            params.append(f"%{target_like}%")
+        if since_ts:
+            conds.append("ts >= ?")
+            params.append(since_ts)
+        where = ("WHERE " + " AND ".join(conds)) if conds else ""
+        total = self.conn.execute(f"SELECT COUNT(*) c FROM audit_log {where}", params).fetchone()["c"]
+        rows = self.conn.execute(
+            f"SELECT ts, actor, action, target, detail_json FROM audit_log {where}"
+            " ORDER BY ts DESC LIMIT ?",
+            [*params, limit],
+        ).fetchall()
+        return [dict(r) for r in rows], total
 
     # ---- backup（商业化：用户记忆是唯一副本，必须有官方备份通道）----
     def backup_to(self, dest_path: str | Path) -> int:

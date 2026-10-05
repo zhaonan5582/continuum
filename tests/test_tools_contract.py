@@ -60,11 +60,9 @@ class TestSevenToolsContract(unittest.TestCase):
         self.assertEqual(r2.session_id, r.session_id)
 
     def test_phase_stubs_are_honest(self):
-        """未到期的工具必须诚实报错且携带期次——不静默装死。"""
+        """未到期的工具必须诚实报错且携带期次——不静默装死。
+        （v1.3 更新：P1 三工具已实装，从 stub 清单移除，行为由 test_p1_recall_audit 覆盖。）"""
         cases = [
-            ("memory_extract", ExtractScope(), "P1"),
-            ("memory_recall", None, "P1"),          # 特判：签名不同，单独调
-            ("memory_audit", AuditQuery(), "P1"),
             ("memory_compact", CompactRange(session_id=1, from_seq=0, to_seq=1), "P2"),
             ("memory_assemble", None, "P2"),
             ("memory_guard", Operation(kind="write", target="x"), "P3"),
@@ -72,13 +70,29 @@ class TestSevenToolsContract(unittest.TestCase):
         for name, arg, phase in cases:
             fn = getattr(self.srv, name)
             with self.assertRaises(FeatureNotAvailable) as cm:
-                if name == "memory_recall":
-                    fn("查询词")
-                elif name == "memory_assemble":
+                if name == "memory_assemble":
                     fn()
                 else:
                     fn(arg)
             self.assertIn(phase, str(cm.exception), f"{name} 报错未携带期次")
+
+    def test_p1_tools_no_longer_stub(self):
+        """P1 工具不再抛 FeatureNotAvailable（回归防护：防止未来误回退成 stub）。"""
+        for name in ("memory_append", "memory_extract", "memory_recall", "memory_audit"):
+            fn = getattr(self.srv, name)
+            try:
+                if name == "memory_append":
+                    fn(AppendRequest(host_agent="w", external_session_id="s", messages=(_msg(),)))
+                elif name == "memory_extract":
+                    fn(ExtractScope())
+                elif name == "memory_recall":
+                    fn("测试")
+                else:
+                    fn(AuditQuery())
+            except FeatureNotAvailable:
+                self.fail(f"{name} 被回退成了未实装 stub！")
+            except Exception:
+                pass  # 其他错误（如参数问题）不算回退
 
 
 class TestBuildFlags(unittest.TestCase):

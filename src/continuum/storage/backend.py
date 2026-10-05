@@ -40,6 +40,15 @@ class StorageBackend(ABC):
         """按 seq 升序取会话消息（UDF 形态）。"""
 
     @abstractmethod
+    def list_session_messages_with_ids(self, session_id: int, limit: int = 200) -> list[tuple[int, UDFMessage]]:
+        """同上但携带 message_id（extract 的数据源需要来源指针）。"""
+
+    @abstractmethod
+    def fetch_messages_since(self, since_ts: str | None = None, limit: int = 200) -> list[tuple[int, UDFMessage]]:
+        """取 (message_id, UDFMessage) 列表（跨会话，ts 升序）。since_ts=None 时取最新 limit 条。
+        sweeping/extract 的数据源。"""
+
+    @abstractmethod
     def search_content(self, query: str, limit: int = 20) -> list[dict]:
         """FTS 全文检索（P1 快速路径主力之一；P0 仅直通实现）。"""
 
