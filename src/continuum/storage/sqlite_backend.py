@@ -175,20 +175,27 @@ class SQLiteBackend(StorageBackend):
         ]
 
     def search_content(self, query: str, limit: int = 20) -> list[dict]:
-        """FTS5 trigram 检索（中文兜底通道；结构化主力在 P1 entities/mentions）。
+        """FTS5 trigram 检索（原文寻回兜底通道）。
 
-        已知限制（P1 修复）：trigram 需要 ≥3 字符查询——更短的查询会静默返回
-        空结果（不报错）。短查询将由 P1 的结构化过滤（实体/类型/时间）接管。
-        """
-        if len(query.strip()) < 3:
-            return []  # trigram 语义下 <3 字符无意义，显式空结果而非抛错
-        rows = self.conn.execute(
-            "SELECT m.id, m.session_id, m.role, m.ts, m.content,"
-            " snippet(messages_fts, 0, '<<', '>>', '…', 24) AS snip"
-            " FROM messages_fts f JOIN messages m ON m.id = f.rowid"
-            " WHERE messages_fts MATCH ? ORDER BY rank LIMIT ?",
-            (query, limit),
-        ).fetchall()
+        v1.5 修正：**引号短语查询**——`"片段"` 对 trigram 索引即连续子串精确匹配
+        （滑窗 OR 会把查询弱化到 3 字粒度，40MB 语料中判别力崩塌，实测 7%）。
+        ≤2 字符显式空结果（trigram 语义下无意义）。"""
+        q = query.strip()
+        if len(q) < 3:
+            return []
+        # 超长串（>40 字）降级为头部短语（FTS 查询串过长性能退化）
+        phrase = q[:40] if len(q) > 40 else q
+        match_expr = f'"{phrase}"'
+        try:
+            rows = self.conn.execute(
+                "SELECT m.id, m.session_id, m.role, m.ts, m.content,"
+                " snippet(messages_fts, 0, '<<', '>>', '…', 24) AS snip"
+                " FROM messages_fts f JOIN messages m ON m.id = f.rowid"
+                " WHERE messages_fts MATCH ? ORDER BY rank LIMIT ?",
+                (match_expr, limit),
+            ).fetchall()
+        except sqlite3.OperationalError:
+            return []          # FTS 语法边缘（引号/特殊序列），兜底空结果
         return [dict(r) for r in rows]
 
     # ---- audit ----

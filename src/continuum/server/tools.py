@@ -227,9 +227,9 @@ class ContinuumServer:
 
         t0 = _time.perf_counter()
         if scope.session_id is not None:
-            rows = self.be.list_session_messages_with_ids(scope.session_id, limit=200)
+            rows = self.be.list_session_messages_with_ids(scope.session_id, limit=5_000)
         else:
-            rows = self.be.fetch_messages_since(scope.since_ts, limit=200)
+            rows = self.be.fetch_messages_since(scope.since_ts, limit=5_000)
         produced, _, scanned = run_extraction(
             self.be, scope.session_id, rows,
             status_override="active" if scope.confirm else "pending",

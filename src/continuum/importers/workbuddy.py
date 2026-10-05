@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -50,6 +51,18 @@ def _content_to_text(content) -> str:
                 parts.append(block["text"])
         return "\n".join(parts)
     return ""
+
+
+_INJECT_RE = re.compile(
+    r"<system-reminder[\s\S]*?</system-reminder>"   # 宿主注入的上下文块（整体剥）
+    r"|</?user_query>"                              # user_query 只剥标签——【内容是用户话语本体，必须保留】
+)
+
+
+def _strip_injections(text: str) -> str:
+    """剥离宿主注入的元数据块（system-reminder/user_query 标记等）。
+    这些是宿主运行时注入，不是用户话语——记忆层只存用户真实内容。"""
+    return _INJECT_RE.sub("", text)
 
 
 def import_workbuddy_session(
@@ -87,11 +100,17 @@ def import_workbuddy_session(
             if d.get("type") != "message":
                 skipped_non_message += 1
                 continue
+            # 宿主内部消息过滤（字段级精准，非启发式猜测）：
+            # isCompactInternal=压缩摘要行 / isMeta=continuation 与元消息——都不是用户话语
+            provider = d.get("providerData") or {}
+            if provider.get("isCompactInternal") or provider.get("isMeta"):
+                skipped_non_message += 1
+                continue
             ts_ms = d.get("timestamp")
             if not isinstance(ts_ms, int):
                 skipped_non_message += 1
                 continue
-            text = _content_to_text(d.get("content"))
+            text = _strip_injections(_content_to_text(d.get("content")))
             if not text.strip():
                 skipped_empty += 1
                 continue
