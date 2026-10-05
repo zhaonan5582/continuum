@@ -43,6 +43,10 @@ class SQLiteBackend(StorageBackend):
         title: str | None = None,
         project_id: str | None = None,
     ) -> int:
+        if not host_agent or not host_agent.strip():
+            raise ValueError("host_agent 不能为空（商业化审查 v1.2：拒绝脏元数据）")
+        if len(host_agent) > 128 or len(external_id) > 256:
+            raise ValueError("host_agent/external_id 超长")
         row = self.conn.execute(
             "SELECT id FROM sessions WHERE host_agent=? AND external_id=?",
             (host_agent, external_id),
@@ -156,5 +160,21 @@ class SQLiteBackend(StorageBackend):
         )
         return int(cur.lastrowid)
 
+    # ---- backup（商业化：用户记忆是唯一副本，必须有官方备份通道）----
+    def backup_to(self, dest_path: str | Path) -> int:
+        """在线一致备份到目标文件（SQLite backup API，期间可继续写入）。返回目标页数。"""
+        dest = sqlite3.connect(str(dest_path))
+        try:
+            with dest:
+                self.conn.backup(dest)
+            return int(dest.execute("PRAGMA page_count").fetchone()[0])
+        finally:
+            dest.close()
+
     def close(self) -> None:
+        # 干净关闭：TRUNCATE checkpoint 合并 WAL（Windows 下释放 -wal/-shm 句柄，防临时目录清理失败）
+        try:
+            self.conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        except sqlite3.Error:
+            pass
         self.conn.close()

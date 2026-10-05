@@ -169,6 +169,8 @@ class ContinuumServer:
 
     # ---- P1 · 已实装 ----
     def memory_append(self, req: AppendRequest) -> AppendResult:
+        if not req.host_agent or not req.host_agent.strip():
+            raise ValueError("host_agent 不能为空（tools 层防御，与 backend 双层）")
         sid = self.be.ensure_session(
             req.host_agent, req.external_session_id, title=req.title, project_id=req.project_id
         )

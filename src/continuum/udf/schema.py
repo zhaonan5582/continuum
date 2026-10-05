@@ -17,7 +17,9 @@ from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
 from typing import Any
 
-from continuum.version import UDF_VERSION
+from continuum.version import UDF_VERSION, DESIGN_CONSTANTS
+
+_MAX_CONTENT_BYTES = DESIGN_CONSTANTS["MAX_CONTENT_BYTES"]
 
 _ROLES = ("user", "assistant", "tool")
 _TS_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$")
@@ -65,10 +67,18 @@ class UDFMessage:
             errs.append(f"role 必须是 {_ROLES} 之一: {self.role!r}")
         if not self.host or not self.host.strip():
             errs.append("host 不能为空")
+        if len(self.host) > 128:
+            errs.append(f"host 超长: {len(self.host)} > 128")
         if not self.session_id or not self.session_id.strip():
             errs.append("session_id 不能为空")
+        if len(self.session_id) > 256:
+            errs.append(f"session_id 超长: {len(self.session_id)} > 256")
         if self.content is None:
             errs.append("content 不能为 None（空字符串允许）")
+        else:
+            nbytes = len(self.content.encode("utf-8", errors="replace"))
+            if nbytes > _MAX_CONTENT_BYTES:
+                errs.append(f"content 超过单条上限 {_MAX_CONTENT_BYTES} 字节（当前 {nbytes}）——超大内容应由适配器分段")
         return errs
 
     def to_udf_dict(self) -> dict[str, Any]:

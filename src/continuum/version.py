@@ -37,4 +37,7 @@ DESIGN_CONSTANTS = {
         "redline",
         "preference",
     ),
+    # 商业化防线（v1.2 审查）：单条 content 字节上限（DoS 防御）
+    "MAX_CONTENT_BYTES": 10_000_000,
+    "MAX_ID_LEN": 128,
 }
