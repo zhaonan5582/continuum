@@ -7,6 +7,7 @@
 """
 from __future__ import annotations
 
+import re
 import sys
 import time
 import unittest
@@ -44,10 +45,12 @@ def _fact_sentence(i: int) -> str:
 
 
 def _query(i: int) -> str:
-    """查询 = 目标语句的独有实体词（模块{i} 全库唯一）。
-    v1.2 修正：search_content 已改短语精确匹配，复合查询（带空格）作为连续短语
-    在原文不存在——查询必须是原文中的连续子串（与真实用户查询语义一致）。"""
-    return f"模块{i}"
+    """查询 = 目标原句中的连续汉字段（原句连续，短语必命中）。
+    终版修正：前两版都从「去标点文本」切片——片段跨原句标点不连续，
+    短语查询必然失配（实测 25%/0%），与引擎无关，纯测试构造错误。"""
+    sentence = _fact_sentence(i)
+    m = re.compile(r"[\u4e00-\u9fff]{8,}").search(sentence)
+    return m.group(0)[:8] if m else sentence[:8]
 
 
 class TestSyntheticRecallBaseline(unittest.TestCase):
