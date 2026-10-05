@@ -118,10 +118,14 @@ def cmd_backup(args) -> int:
     return 0
 
 
-# ---------- serve ----------
+# ---------- serve / 钩子执行（档位 B 核心接线） ----------
 
 def cmd_serve(args) -> int:
-    """启动 MCP server（stdio）。mcp 未安装时给出清晰指引。"""
+    """--on 缺省：启动 MCP server（stdio）。
+    --on session-end / prompt / guard：Claude Code 钩子执行模式（档位 B）——
+    从 stdin 读 Claude Code hook JSON，执行对应动作后按其协议输出。"""
+    if getattr(args, "on", None):
+        return _run_hook(args.on, args.db, stdin_text=getattr(args, "stdin_text", None))
     try:
         from continuum.server.mcp import build_mcp_server
     except ImportError:
@@ -131,6 +135,89 @@ def cmd_serve(args) -> int:
     mcp = build_mcp_server(srv)
     mcp.run()          # stdio
     return 0
+
+
+def _read_hook_stdin(injected: str | None = None) -> dict:
+    """读 Claude Code hook 的 stdin JSON（解析失败返回空 dict，不挂死）。
+    injected 非空时直接使用（测试/编程调用），不读 stdin。"""
+    if injected is not None:
+        raw = injected
+    else:
+        raw = sys.stdin.read()
+    try:
+        return json.loads(raw) if raw.strip() else {}
+    except json.JSONDecodeError:
+        return {}
+
+
+def _run_hook(on: str, db_path: str, stdin_text: str | None = None) -> int:
+    from continuum.server import ContinuumServer, ExtractScope
+
+    be = _open_backend(db_path)
+    try:
+        srv = ContinuumServer(be)      # 复用同一连接（杜绝双连接句柄残留）
+        if on == "session-end":
+            payload = _read_hook_stdin(stdin_text)
+            r = srv.memory_extract(ExtractScope(session_id=None, since_ts=None))
+            print(json.dumps({"continuum": "session-end 沉淀完成",
+                              "produced_pending": r.produced_pending,
+                              "scanned": r.scanned_messages}, ensure_ascii=False))
+            return 0
+        if on == "prompt":
+            # UserPromptSubmit：stdout 会作为上下文注入——输出装配摘要 + 提醒
+            pkg = srv.memory_assemble(project_id=None)
+            print(pkg.snapshot_md[:4000])
+            if pkg.recent_verbatim:
+                print("\n[最近现场]\n" + "\n".join(pkg.recent_verbatim[-5:]))
+            print("\n（以上为 Continuum 记忆装配。需要更多历史时调用 memory_recall；"
+                  "记忆中有红线的内容严禁触碰。）")
+            return 0
+        if on == "guard":
+            payload = _read_hook_stdin(stdin_text)
+            tool_name = payload.get("tool_name", "")
+            tool_input = payload.get("tool_input") or {}
+            target = json.dumps(tool_input, ensure_ascii=False)[:500]
+            v = srv.memory_guard(
+                __import__("continuum.server", fromlist=["Operation"]).Operation(
+                    kind=tool_name, target=target))
+            if v.verdict == "block":
+                print(json.dumps({"hookSpecificOutput": {
+                    "hookEventName": "PreToolUse",
+                    "permissionDecision": "deny",
+                    "permissionDecisionReason": f"[Continuum 红线] {v.reason}"}}, ensure_ascii=False))
+            elif v.verdict == "ask":
+                print(json.dumps({"hookSpecificOutput": {
+                    "hookEventName": "PreToolUse",
+                    "permissionDecision": "ask",
+                    "permissionDecisionReason": "[Continuum] 该操作命中需人工确认的红线"}}, ensure_ascii=False))
+            # warn/allow：无输出 + exit 0（放行）
+            return 0
+        print(f"未知 --on 目标: {on}", file=sys.stderr)
+        return 2
+    finally:
+        be.close()
+
+
+
+
+# ---------- guard 测试集执行器 ----------
+
+def cmd_guard_test(args) -> int:
+    """执行 redline_tests 正反测试集——防误伤机制的自动化回归。"""
+    from continuum.server import ContinuumServer
+
+    srv = _open_server(args.db)
+    results = srv.run_redline_tests()
+    total = len(results)
+    failed = [r for r in results if not r["pass"]]
+    for r in results:
+        mark = "PASS" if r["pass"] else "FAIL"
+        print(f"[{mark}] 红线#{r['redline_id']} {r['case_type']} target={r['sample_target'][:60]}"
+              f" 期望={r['expected_action']} 实际={r['actual']}  {r['note'][:40]}")
+    be_closed = None
+    print(f"\n执行 {total} 项，通过 {total - len(failed)}，失败 {len(failed)}")
+    srv.be.close()
+    return 0 if not failed else 1
 
 
 # ---------- 解析器 ----------
@@ -168,8 +255,13 @@ def build_parser() -> argparse.ArgumentParser:
     bk.add_argument("out")
     bk.set_defaults(func=cmd_backup)
 
-    sv = sub.add_parser("serve", help="启动 MCP server（stdio）")
+    sv = sub.add_parser("serve", help="启动 MCP server（stdio）；--on 进入钩子执行模式")
+    sv.add_argument("--on", choices=["session-end", "prompt", "guard"], default=None,
+                    help="档位 B 钩子执行模式（由 hooks 配置模板自动生成）")
     sv.set_defaults(func=cmd_serve)
+
+    gt = sub.add_parser("guard-test", help="执行红线正反测试集（防误伤回归）")
+    gt.set_defaults(func=cmd_guard_test)
     return p
 
 

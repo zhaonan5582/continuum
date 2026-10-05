@@ -386,6 +386,36 @@ class ContinuumServer:
                       {"verdict": verdict, "matched": list(ids), "kind": operation.kind})
         return GuardVerdict(verdict=verdict, matched_redlines=ids, reason=reason)
 
+    def run_redline_tests(self) -> list[dict]:
+        """执行红线正反测试集（docs/01 §5.5：每条红线的自动化回归）。
+        返回 [{redline_id, case_type, sample_target, expected_action, actual, pass, note}]。"""
+        rows = self.be.conn.execute(
+            "SELECT t.id AS tid, t.redline_id, t.case_type, t.sample_target,"
+            " t.sample_detail, t.expected_action, r.pattern, r.scope, r.action AS rule_action"
+            " FROM redline_tests t JOIN redlines r ON r.id = t.redline_id"
+            " WHERE r.enabled = 1 ORDER BY t.id"
+        ).fetchall()
+        results: list[dict] = []
+        for r in rows:
+            v = self.memory_guard(Operation(
+                kind="hook-probe", target=r["sample_target"],
+                detail={"project_id": r["scope"].split(":", 1)[1] if r["scope"].startswith("project:") else None},
+            ))
+            actual = v.verdict
+            note = ""
+            if r["case_type"] == "positive":
+                ok = actual == r["expected_action"]
+                note = "" if ok else "正用例未按期望动作"
+            else:  # negative：不该命中红线
+                ok = actual == "allow"
+                note = "" if ok else "反用例被误拦（pattern 过宽）"
+            results.append({
+                "redline_id": r["redline_id"], "case_type": r["case_type"],
+                "sample_target": r["sample_target"], "expected_action": r["expected_action"],
+                "actual": actual, "pass": ok, "note": note,
+            })
+        return results
+
     def persona_current_md(self) -> str:
         """最新人格状态块文本（assemble 数据源；无版本返回占位）。"""
         cur = self.be.persona_current()
