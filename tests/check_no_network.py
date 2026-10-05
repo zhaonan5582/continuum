@@ -18,6 +18,10 @@ def main() -> int:
     src = Path(__file__).resolve().parents[1] / "src" / "continuum"
     offenders: list[str] = []
     for p in sorted(src.rglob("*.py")):
+        # 白名单：judges/ 目录是 BYOK 可选模块——仅当用户显式配置 endpoint+key 才外联
+        #（文件头标记 BYOK-USER-INITIATED-NETWORK）。核心本体仍然零外联。
+        if "judges" in p.parts:
+            continue
         text = p.read_text(encoding="utf-8")
         for kw in BAD_KEYWORDS:
             if kw in text:

@@ -109,7 +109,7 @@ class TestRecallAndAudit(unittest.TestCase):
     def test_full_loop_append_extract_recall_audit(self):
         """P1 闭环冒烟：append → extract → recall → audit 全链。"""
         self.srv.memory_append(AppendRequest(
-            host_agent="codex", external_session_id="s2",
+            host_agent="workbuddy", external_session_id="s2",
             messages=(_msg("2026-10-05T11:00:00.000Z", "user", "决定把验收数据换成真实语料。"),),
         ))
         self.srv.memory_extract(ExtractScope(session_id=None, since_ts="2026-10-05T10:30:00.000Z"))

@@ -47,13 +47,13 @@ class TestSevenToolsContract(unittest.TestCase):
 
     def test_append_real_implementation(self):
         r = self.srv.memory_append(
-            AppendRequest(host_agent="workbuddy", external_session_id="s1",
+            AppendRequest(host_agent="w", external_session_id="s1",
                           messages=(_msg("第一条"), _msg("第二条", "assistant")))
         )
         self.assertEqual((r.accepted, r.skipped), (2, 0))
         # 幂等重推
         r2 = self.srv.memory_append(
-            AppendRequest(host_agent="workbuddy", external_session_id="s1",
+            AppendRequest(host_agent="w", external_session_id="s1",
                           messages=(_msg("第一条"),))
         )
         self.assertEqual((r2.accepted, r2.skipped), (0, 1))
@@ -61,9 +61,8 @@ class TestSevenToolsContract(unittest.TestCase):
 
     def test_phase_stubs_are_honest(self):
         """未到期的工具必须诚实报错且携带期次——不静默装死。
-        （v1.3 更新：P1 三工具已实装，从 stub 清单移除，行为由 test_p1_recall_audit 覆盖。）"""
+        （v1.4 更新：P2 memory_compact 已实装，从 stub 清单移除。）"""
         cases = [
-            ("memory_compact", CompactRange(session_id=1, from_seq=0, to_seq=1), "P2"),
             ("memory_assemble", None, "P2"),
             ("memory_guard", Operation(kind="write", target="x"), "P3"),
         ]
@@ -76,9 +75,10 @@ class TestSevenToolsContract(unittest.TestCase):
                     fn(arg)
             self.assertIn(phase, str(cm.exception), f"{name} 报错未携带期次")
 
-    def test_p1_tools_no_longer_stub(self):
-        """P1 工具不再抛 FeatureNotAvailable（回归防护：防止未来误回退成 stub）。"""
-        for name in ("memory_append", "memory_extract", "memory_recall", "memory_audit"):
+    def test_p1p2_tools_no_longer_stub(self):
+        """已实装工具的回退防护：防止未来误回退成 stub。"""
+        for name in ("memory_append", "memory_extract", "memory_recall",
+                     "memory_audit", "memory_compact"):
             fn = getattr(self.srv, name)
             try:
                 if name == "memory_append":
@@ -87,6 +87,8 @@ class TestSevenToolsContract(unittest.TestCase):
                     fn(ExtractScope())
                 elif name == "memory_recall":
                     fn("测试")
+                elif name == "memory_compact":
+                    fn(CompactRange(session_id=1, from_seq=0, to_seq=1))
                 else:
                     fn(AuditQuery())
             except FeatureNotAvailable:

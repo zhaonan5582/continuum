@@ -193,13 +193,23 @@ class ContinuumServer:
         "memory_guard": "P3",
     }
 
-    def __init__(self, backend: StorageBackend):
+    def __init__(self, backend: StorageBackend, judge=None):
         self.be = backend
+        self.judge = judge        # P2：Judge 实例（可选，None=启发式兜底）
+
+    def set_judge(self, judge) -> None:
+        """运行时注入/替换 Judge（BYOK 配置变化时调用）。"""
+        self.judge = judge
 
     # ---- P1 · 已实装 ----
     def memory_append(self, req: AppendRequest) -> AppendResult:
         if not req.host_agent or not req.host_agent.strip():
             raise ValueError("host_agent 不能为空（tools 层防御，与 backend 双层）")
+        # 一致性强制：消息级 host 必须与会话级 host_agent 一致，
+        # 否则同一条消息会因幂等键 (host, external_id) 不匹配而静默分裂会话（探针坐实）
+        bad = sorted({m.host for m in req.messages if m.host != req.host_agent})
+        if bad:
+            raise ValueError(f"消息 host 与 host_agent 不一致 {bad}（应为 {req.host_agent!r}）——适配器必须统一")
         sid = self.be.ensure_session(
             req.host_agent, req.external_session_id, title=req.title, project_id=req.project_id
         )
@@ -295,9 +305,33 @@ class ContinuumServer:
         )
         return AuditResult(entries=tuple(entries), total_matched=total)
 
-    # ---- P2 · 契约 stub ----
+    # ---- P2 · 已实装 ----
     def memory_compact(self, rng: CompactRange) -> CompactPlan:
-        raise FeatureNotAvailable("memory_compact", self.PHASES["memory_compact"])
+        """按条判决压缩（宪法 5）：逐条 full/truncate/drop + 理由 + 原文指针。
+        产物是清单不是摘要。有 judge 用 judge 逐条判；无 judge 启发式兜底（拿不准一律 full）。
+        drop 前提：该消息已沉淀出记忆（有指针）——无损层承诺不破。"""
+        from continuum.compact import compact_session
+
+        entries, before, after = compact_session(
+            self.be, rng.session_id, rng.from_seq, rng.to_seq, judge=self.judge
+        )
+        plan = CompactPlan(
+            session_id=rng.session_id,
+            entries=tuple(CompactEntry(
+                message_id=e["message_id"], verdict=e["verdict"],
+                reason=e["reason"], pointer=e["pointer"],
+            ) for e in entries),
+            chars_before=before, chars_after=after,
+        )
+        self.be.audit("core", "compact", f"sessions/{rng.session_id}", {
+            "range": [rng.from_seq, rng.to_seq], "entries": len(plan.entries),
+            "chars_before": before, "chars_after": after,
+            "verdicts": {v: sum(1 for e in plan.entries if e.verdict == v)
+                         for v in ("full", "truncate", "drop")},
+        })
+        return plan
+
+    # ---- P2 · 契约 stub ----
 
     def memory_assemble(self, project_id: str | None = None) -> AssemblePackage:
         raise FeatureNotAvailable("memory_assemble", self.PHASES["memory_assemble"])

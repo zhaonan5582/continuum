@@ -27,6 +27,7 @@ class TestZeroNetwork(unittest.TestCase):
         offenders = [
             str(p)
             for p in src.rglob("*.py")
+            if "judges" not in p.parts          # BYOK 模块白名单（用户显式配置才外联）
             for kw in bad_keywords
             if kw in p.read_text(encoding="utf-8")
         ]
