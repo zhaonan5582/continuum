@@ -49,7 +49,7 @@ def _query(i: int) -> str:
     终版修正：前两版都从「去标点文本」切片——片段跨原句标点不连续，
     短语查询必然失配（实测 25%/0%），与引擎无关，纯测试构造错误。"""
     sentence = _fact_sentence(i)
-    m = re.compile(r"[\u4e00-\u9fff]{8,}").search(sentence)
+    m = re.compile(r"[\u4e00-\u9fff\d]{8,}").search(sentence)
     return m.group(0)[:8] if m else sentence[:8]
 
 
@@ -81,7 +81,7 @@ class TestSyntheticRecallBaseline(unittest.TestCase):
             lat: list[float] = []
             for i in range(0, 100):
                 q = _query(i)
-                target = _fact_sentence(i)[:20]      # 目标语句前缀
+                target = _fact_sentence(i).rstrip("。")   # 去句号：statement 经切句无句号
                 t0 = time.perf_counter()
                 rr = srv.memory_recall(q, limit=20)
                 lat.append((time.perf_counter() - t0) * 1000)
