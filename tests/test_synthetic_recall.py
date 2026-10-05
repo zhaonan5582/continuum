@@ -44,11 +44,10 @@ def _fact_sentence(i: int) -> str:
 
 
 def _query(i: int) -> str:
-    """查询 = 目标语句的独有实体词（模块{i} 全库唯一）+ 类型词。
-    v1.1 修正：原查询用共享词（通道1/方案N）导致 LIMIT 截断与查询-目标错配，
-    召回 50% 是测试设计缺陷而非引擎缺陷——真实用户查询含独特实体词，语义等同本修正版。"""
-    kind_word = ["决定", "约定", "红线", "排除"][i % 4]
-    return f"模块{i} {kind_word}"
+    """查询 = 目标语句的独有实体词（模块{i} 全库唯一）。
+    v1.2 修正：search_content 已改短语精确匹配，复合查询（带空格）作为连续短语
+    在原文不存在——查询必须是原文中的连续子串（与真实用户查询语义一致）。"""
+    return f"模块{i}"
 
 
 class TestSyntheticRecallBaseline(unittest.TestCase):
