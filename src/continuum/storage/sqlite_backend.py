@@ -60,37 +60,53 @@ class SQLiteBackend(StorageBackend):
 
     # ---- messages ----
     def append_messages(self, session_id: int, messages: list[UDFMessage]) -> tuple[list[int], int]:
-        accepted: list[int] = []
-        skipped = 0
-        row = self.conn.execute(
-            "SELECT COALESCE(MAX(seq), 0) AS m FROM messages WHERE session_id=?", (session_id,)
-        ).fetchone()
-        seq = int(row["m"])
-        for msg in messages:
+        """原文落库，语义 = 全或无：
+        - 任何一条 UDF 非法 → 整批拒绝（一条不落），适配器修正后重推整批；
+        - INSERT 阶段在显式事务内，杜绝半批落库；
+        - 幂等键 (session_id, ts, role, content_hash)：同一消息重推不重复落库。
+          已知取舍：秒级 ts 下「同秒同角色同内容」的两条真实发言会被视为重推——
+          适配器必须提供毫秒级精度 ts（UDF schema 已注明），现实中概率≈0。
+        """
+        # 校验前置：任何一条非法即整批拒绝（fail-fast，不落任何一行）
+        for i, msg in enumerate(messages):
             errs = msg.validate()
             if errs:
-                raise ValueError(f"UDF 校验失败: {'; '.join(errs)}")
-            seq += 1
-            chash = _sha256(f"{msg.role}|{msg.ts}|{msg.content}")
-            cur = self.conn.execute(
-                "INSERT OR IGNORE INTO messages"
-                " (session_id, seq, role, host, content, content_hash, ts, token_count)"
-                " VALUES(?,?,?,?,?,?,?,?)",
-                (
-                    session_id,
-                    seq,
-                    msg.role,
-                    msg.host,
-                    msg.content,
-                    chash,
-                    msg.ts,
-                    msg.meta.tokens,
-                ),
-            )
-            if cur.rowcount == 0:  # 幂等命中：同一消息重复推送
-                skipped += 1
-                continue
-            accepted.append(int(cur.lastrowid))
+                raise ValueError(f"第 {i} 条 UDF 校验失败，整批拒绝: {'; '.join(errs)}")
+
+        accepted: list[int] = []
+        skipped = 0
+        try:
+            self.conn.execute("BEGIN")
+            row = self.conn.execute(
+                "SELECT COALESCE(MAX(seq), 0) AS m FROM messages WHERE session_id=?", (session_id,)
+            ).fetchone()
+            seq = int(row["m"])
+            for msg in messages:
+                seq += 1
+                chash = _sha256(f"{msg.role}|{msg.ts}|{msg.content}")
+                cur = self.conn.execute(
+                    "INSERT OR IGNORE INTO messages"
+                    " (session_id, seq, role, host, content, content_hash, ts, token_count)"
+                    " VALUES(?,?,?,?,?,?,?,?)",
+                    (
+                        session_id,
+                        seq,
+                        msg.role,
+                        msg.host,
+                        msg.content,
+                        chash,
+                        msg.ts,
+                        msg.meta.tokens,
+                    ),
+                )
+                if cur.rowcount == 0:  # 幂等命中：同一消息重复推送
+                    skipped += 1
+                    continue
+                accepted.append(int(cur.lastrowid))
+            self.conn.execute("COMMIT")
+        except Exception:
+            self.conn.rollback()
+            raise
         if accepted:
             self.audit(
                 "core",
@@ -116,7 +132,13 @@ class SQLiteBackend(StorageBackend):
             )
 
     def search_content(self, query: str, limit: int = 20) -> list[dict]:
-        """FTS5 trigram 检索（中文兜底通道；结构化主力在 P1 entities/mentions）。"""
+        """FTS5 trigram 检索（中文兜底通道；结构化主力在 P1 entities/mentions）。
+
+        已知限制（P1 修复）：trigram 需要 ≥3 字符查询——更短的查询会静默返回
+        空结果（不报错）。短查询将由 P1 的结构化过滤（实体/类型/时间）接管。
+        """
+        if len(query.strip()) < 3:
+            return []  # trigram 语义下 <3 字符无意义，显式空结果而非抛错
         rows = self.conn.execute(
             "SELECT m.id, m.session_id, m.role, m.ts, m.content,"
             " snippet(messages_fts, 0, '<<', '>>', '…', 24) AS snip"

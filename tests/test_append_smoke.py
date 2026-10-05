@@ -72,10 +72,33 @@ class TestAppendSmoke(unittest.TestCase):
         sid_a = self.be.ensure_session("workbuddy", "sess-001")
         self.assertEqual(sid_a, self.sid)
 
-    def test_invalid_udf_rejected_at_storage(self):
-        bad = UDFMessage(ts="not-a-time", role="user", host="w", session_id="x", content="c")
+    def test_invalid_udf_rejects_whole_batch(self):
+        """批内一条非法 → 整批拒绝（全或无），绝不留半批落库。"""
         with self.assertRaises(ValueError):
-            self.be.append_messages(self.sid, [bad])
+            self.be.append_messages(self.sid, [
+                _msg("2026-10-05T10:01:00.000Z", "user", "合法1"),
+                _msg("bad-ts", "user", "非法"),
+                _msg("2026-10-05T10:02:00.000Z", "user", "合法2"),
+            ])
+        n = self.be.conn.execute(
+            "SELECT COUNT(*) c FROM messages WHERE content IN ('合法1','合法2')"
+        ).fetchone()["c"]
+        self.assertEqual(n, 0, "整批拒绝后不应有任何落库")
+
+    def test_same_second_same_content_is_deduped(self):
+        """已知取舍（文档化）：秒级 ts 下同秒同角色同内容视为重推被去重。
+        适配器规范要求毫秒级 ts（udf.schema.json ts description），现实中概率≈0。"""
+        ids, skipped = self.be.append_messages(self.sid, [
+            _msg("2026-10-05T10:00:00.000Z", "user", "好"),
+            _msg("2026-10-05T10:00:00.000Z", "user", "好"),
+        ])
+        self.assertEqual((len(ids), skipped), (1, 1))
+
+    def test_short_query_returns_empty_not_error(self):
+        """trigram 语义：≥3 字符才有意义；短查询显式空结果（P1 结构化主力接管）。"""
+        self.be.append_messages(self.sid, [_msg("2026-10-05T10:00:00.000Z", "user", "收敛扇驱逐公式")])
+        self.assertEqual(self.be.search_content("收"), [])
+        self.assertEqual(self.be.search_content("收敛"), [])
 
 
 if __name__ == "__main__":

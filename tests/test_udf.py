@@ -52,6 +52,17 @@ class TestUDF(unittest.TestCase):
         with self.assertRaises(UDFError):
             parse_udf(bad)
 
+    def test_semantically_invalid_ts_rejected(self):
+        """正则只查形状；25:99 这类形状合法但语义无效的时刻必须拦下。"""
+        bad = dict(VALID, ts="2026-10-05T25:99:99.000Z")
+        with self.assertRaises(UDFError):
+            parse_udf(bad)
+
+    def test_meta_must_be_object(self):
+        bad = dict(VALID, meta="oops")
+        with self.assertRaises(UDFError):
+            parse_udf(bad)
+
     def test_empty_content_allowed(self):
         msg = parse_udf(dict(VALID, content=""))
         self.assertEqual(msg.content, "")

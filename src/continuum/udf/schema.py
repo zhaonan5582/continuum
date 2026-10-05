@@ -89,20 +89,31 @@ def parse_udf(data: dict[str, Any]) -> UDFMessage:
         raise UDFError("UDF 必须是 JSON object")
     known = {"udf_version", "ts", "role", "host", "session_id", "content", "meta"}
     unknown = set(data) - known
-    meta = data.get("meta") or {}
+    meta = data.get("meta")
+    if meta is not None and not isinstance(meta, dict):
+        raise UDFError(f"meta 必须是 object，得到 {type(meta).__name__}")
     msg = UDFMessage(
         ts=data.get("ts", ""),
         role=data.get("role", ""),
         host=data.get("host", ""),
         session_id=data.get("session_id", ""),
         content=data.get("content", ""),
-        meta=UDFMeta(tool=meta.get("tool"), tokens=meta.get("tokens")),
+        meta=UDFMeta(
+            tool=meta.get("tool") if isinstance(meta, dict) else None,
+            tokens=meta.get("tokens") if isinstance(meta, dict) else None,
+        ),
     )
     errs = msg.validate()
     if unknown:
         errs.append(f"未知字段（UDF v1 冻结，禁止私有扩展）: {sorted(unknown)}")
     if "udf_version" in data and data["udf_version"] != UDF_VERSION:
         errs.append(f"udf_version 不匹配: 期望 {UDF_VERSION}, 得到 {data['udf_version']!r}")
+    # 语义级时间校验（正则只查形状；25:99 这类值必须在这里拦下）
+    if not errs or all("ts 不是" not in e for e in errs):
+        try:
+            datetime.fromisoformat(msg.ts.replace("Z", "+00:00"))
+        except ValueError as e:
+            errs.append(f"ts 不是有效时刻: {msg.ts!r} ({e})")
     if errs:
         raise UDFError("; ".join(errs))
     return msg

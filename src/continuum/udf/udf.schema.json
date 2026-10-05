@@ -10,7 +10,7 @@
     "udf_version": { "const": 1 },
     "ts": {
       "type": "string",
-      "description": "ISO8601 timestamp with timezone, e.g. 2026-10-05T12:00:00.000Z",
+      "description": "ISO8601 timestamp with timezone. Adapters MUST provide millisecond-or-better precision — (session_id, ts, role, content_hash) is the idempotent re-append key; second-precision timestamps can conflate distinct identical messages.",
       "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})$"
     },
     "role": { "enum": ["user", "assistant", "tool"] },
