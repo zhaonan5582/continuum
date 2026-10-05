@@ -139,6 +139,8 @@ def build_mcp_server(cs: ContinuumServer, feed=None):
     @_sync
     def memory_assemble(project_id: str | None = None) -> dict:
         """冷启动装配包（P2）：persona 最新版 + L0 + 当前项目 L1 + 最近现场，总预算 ≤8K token。"""
+        if _FEED is not None:
+            _FEED.sweep_now()   # 消费前先生产：装配「最新」包之前先补增量（WorkBuddy 第 0 扳机）
         r = cs.memory_assemble(project_id)
         return {"project_id": r.project_id, "persona_md": r.persona_md, "snapshot_md": r.snapshot_md,
                 "recent_verbatim": list(r.recent_verbatim), "token_estimate": r.token_estimate,

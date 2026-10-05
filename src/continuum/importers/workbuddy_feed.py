@@ -116,6 +116,19 @@ class WorkbuddyFeed:
             print(f"[continuum-feed] sweep 失败（已忽略）: {e}", file=sys.stderr)
             return SweepResult(triggered=False, reason="error")
 
+    def sweep_now(self) -> SweepResult:
+        """强制立即扫描（绕过计数扳机）——消费语义场景用：memory_assemble 拿
+        「最新」装配包之前先补增量，装配包才配得上"最新"。仍吞异常。
+        成功后重置扳机节律（强制扫计入正常节律，避免紧随的 maybe_sweep 重复扫描）。"""
+        try:
+            r = self._sweep("forced")
+            self._calls_since_sweep = 0
+            self._last_sweep_ts = time.time()
+            return r
+        except Exception as e:  # noqa: BLE001
+            print(f"[continuum-feed] 强制 sweep 失败（已忽略）: {e}", file=sys.stderr)
+            return SweepResult(triggered=False, reason="error")
+
     def _sweep(self, reason: str) -> SweepResult:
         result = SweepResult(triggered=True, reason=reason)
         for path in sorted(self.projects_dir.rglob("*.jsonl")):

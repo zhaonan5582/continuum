@@ -69,6 +69,9 @@ def materialize_l1(backend: StorageBackend, project_id: str | None = None,
         if len(section) > 1:
             lines.extend(section)
             used += section_used
+    if len(lines) == 1:
+        # 空态占位：不留悬空指针（L0 红线概况写着"全文见 L1"，L1 不能是裸标题）
+        lines.append("（暂无 active 记忆——等待落库 / 沉淀或显式导入）")
     if truncated:
         lines.append(f"（{len(truncated)} 条因预算截断，可经 recall 寻回）")
     return "\n".join(lines)
@@ -91,6 +94,8 @@ def materialize_l0(backend: StorageBackend, budget_tokens: int = 2_000) -> str:
     for r in projects:
         if r["project_id"]:
             lines.append(f"- {r['project_id']}")
+    if not any(r["project_id"] for r in projects):
+        lines.append("- （暂无——等待首次落库或显式导入）")
     lines.append(f"## 红线概况：当前生效红线 {redline_count} 条（全文见 L1）")
     text = "\n".join(lines)
     while estimate_tokens(text) > budget_tokens and len(lines) > 3:

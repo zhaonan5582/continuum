@@ -106,6 +106,18 @@ class TestWorkbuddyFeed(unittest.TestCase):
         self.assertFalse(r.triggered)
         self.assertEqual(r.new_messages, 0)
 
+    def test_sweep_now_bypasses_counter(self):
+        """sweep_now：计数为 0（远未达扳机）也强制扫描；扫后节律重置。"""
+        f = self.proj / "sess-force.jsonl"
+        f.write_text(_msg_line("强制扫描应立即入库") + "\n", encoding="utf-8")
+        feed = self._make_feed(initialized_at=time.time() - 3600)
+        self.assertEqual(feed._calls_since_sweep, 0)          # 远未达扳机
+        r = feed.sweep_now()
+        self.assertTrue(r.triggered)
+        self.assertEqual(r.reason, "forced")
+        self.assertEqual(r.new_messages, 1)
+        self.assertEqual(feed._calls_since_sweep, 0)          # 节律已重置
+
     def test_sweep_failure_does_not_raise(self):
         """喂食失败绝不向调用方抛异常（宿主工具调用不受影响）。"""
         feed = self._make_feed(initialized_at=time.time() - 3600)
