@@ -20,7 +20,8 @@ from continuum.proxy.server import ProxyHandler, run_proxy  # noqa: E402
 from continuum.storage import SQLiteBackend  # noqa: E402
 
 MIGRATIONS = Path(__file__).resolve().parents[1] / "src" / "continuum" / "storage" / "migrations" / "sql"
-PORT = 18402
+# 使用临时端口（port=0 → OS 分配可用端口），避免 CI 端口冲突
+PORT = 0
 
 _opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 urllib.request.install_opener(_opener)
@@ -32,10 +33,11 @@ class TestProxyServer(unittest.TestCase):
         self.db = str(Path(self.td.name) / "test.continuum.db")
         self.backend = SQLiteBackend(self.db, MIGRATIONS)
         from http.server import HTTPServer
-        from continuum.proxy.server import ProxyHandler
         handler = type("H", (ProxyHandler,), {
             "backend": self.backend, "target_url": "https://api.deepseek.com"})
+        # port=0 → OS 分配可用端口；实际端口从 server_address 动态读取
         self.server = HTTPServer(("127.0.0.1", PORT), handler)
+        self.port = self.server.server_address[1]
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
 
@@ -45,7 +47,7 @@ class TestProxyServer(unittest.TestCase):
         self.td.cleanup()
 
     def _post(self, path, body, headers=None):
-        url = f"http://127.0.0.1:{PORT}{path}"
+        url = f"http://127.0.0.1:{self.port}{path}"
         payload = json.dumps(body).encode("utf-8")
         hdrs = {"Content-Type": "application/json", **(headers or {})}
         req = urllib.request.Request(url, data=payload, headers=hdrs, method="POST")
@@ -58,7 +60,7 @@ class TestProxyServer(unittest.TestCase):
             return 0, {"error": str(e)}, {}   # 网络层失败返回哨兵
 
     def test_health_check(self):
-        req = urllib.request.Request(f"http://127.0.0.1:{PORT}/health")
+        req = urllib.request.Request(f"http://127.0.0.1:{self.port}/health")
         with urllib.request.urlopen(req, timeout=5) as resp:
             data = json.loads(resp.read().decode("utf-8"))
         self.assertEqual(data["status"], "ok")
