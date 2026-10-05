@@ -23,15 +23,22 @@ class TestZeroNetwork(unittest.TestCase):
 
     def test_no_network_imports(self):
         src = Path(__file__).resolve().parents[1] / "src" / "continuum"
-        bad_keywords = ("urllib", "requests", "httpx", "socket", "http.client", "urllib3")
+        bad_keywords = ("requests", "httpx", "socket", "http.client", "urllib3")
+        whitelist_dirs = {"judges", "proxy"}
         offenders = [
             str(p)
             for p in src.rglob("*.py")
-            if "judges" not in p.parts          # BYOK 模块白名单（用户显式配置才外联）
+            if not any(w in p.parts for w in whitelist_dirs)
             for kw in bad_keywords
             if kw in p.read_text(encoding="utf-8")
         ]
-        self.assertEqual(offenders, [], f"核心包出现网络库引用（违反零外联承诺）: {offenders}")
+        # urllib 单独检查（proxy/server.py 的转发用法 + judges/ BYOK 均白名单）
+        for p in src.rglob("*.py"):
+            if any(w in p.parts for w in whitelist_dirs):
+                continue
+            if "urllib" in p.read_text(encoding="utf-8"):
+                offenders.append(f"{p} contains 'urllib'")
+        self.assertEqual(offenders, [], f"核心包出现网络库引用: {offenders}")
 
 
 class TestDoSLimits(unittest.TestCase):
