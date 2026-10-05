@@ -32,6 +32,7 @@ class ImportReport:
     imported_messages: int
     skipped_non_message: int
     skipped_empty_content: int
+    skipped_oversized: int = 0     # 超过 MAX_CONTENT_BYTES 的巨型行（跳过并计数，防整批失败）
 
 
 def _ms_to_iso(ms: int) -> str:
@@ -69,6 +70,8 @@ def import_workbuddy_session(
     total_lines = 0
     skipped_non_message = 0
     skipped_empty = 0
+    skipped_oversized = 0
+    max_bytes = 10_000_000  # 与 DESIGN_CONSTANTS["MAX_CONTENT_BYTES"] 一致（导入防御，探针24）
 
     with path.open(encoding="utf-8") as f:
         for line in f:
@@ -92,6 +95,9 @@ def import_workbuddy_session(
             if not text.strip():
                 skipped_empty += 1
                 continue
+            if len(text.encode("utf-8", errors="replace")) > max_bytes:
+                skipped_oversized += 1   # 巨型行跳过不导入（防整批失败），计数可见
+                continue
             role = d.get("role") if d.get("role") in ("user", "assistant") else "assistant"
             messages.append(UDFMessage(
                 ts=_ms_to_iso(ts_ms),
@@ -108,9 +114,10 @@ def import_workbuddy_session(
         "file": path.name, "lines": total_lines,
         "imported": len(ids), "skipped_dup": skipped_dup,
         "skipped_non_message": skipped_non_message, "skipped_empty": skipped_empty,
+        "skipped_oversized": skipped_oversized,
     })
     return ImportReport(
         session_id=sid, external_session_id=external_id, total_lines=total_lines,
         imported_messages=len(ids), skipped_non_message=skipped_non_message,
-        skipped_empty_content=skipped_empty,
+        skipped_empty_content=skipped_empty, skipped_oversized=skipped_oversized,
     )

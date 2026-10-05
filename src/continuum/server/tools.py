@@ -48,6 +48,8 @@ class ExtractScope:
     session_id: int | None = None
     since_ts: str | None = None
     kind: str | None = None          # fact/decision/exclusion/convention/redline/preference
+    confirm: bool = False            # v1.3 审查修复：True=用户显式触发（拍板）→ active；
+                                     # False=机制扳机（sweeping）→ pending 待确认
 
 
 @dataclass(frozen=True)
@@ -205,7 +207,10 @@ class ContinuumServer:
         return AppendResult(session_id=sid, accepted=len(ids), skipped=skipped, message_ids=tuple(ids))
 
     def memory_extract(self, scope: ExtractScope) -> ExtractResult:
-        """轨道 B / sweeping 的沉淀动作（无 judge 模式：中文启发式，全量 inferred+pending）。"""
+        """轨道 B / sweeping 的沉淀动作（无 judge 模式：中文启发式）。
+        confirm=True（用户显式触发）→ active 直接可召回；
+        confirm=False（机制扳机）→ pending 待确认（探针23：沉淀必须可见，但猜测不当记忆卖——
+        pending 条目进管理队列，active 才进用户召回）。"""
         import time as _time
 
         from continuum.extract import run_extraction  # 延迟导入保持 server 层轻
@@ -215,11 +220,17 @@ class ContinuumServer:
             rows = self.be.list_session_messages_with_ids(scope.session_id, limit=200)
         else:
             rows = self.be.fetch_messages_since(scope.since_ts, limit=200)
-        produced, _, scanned = run_extraction(self.be, scope.session_id, rows)
+        produced, _, scanned = run_extraction(
+            self.be, scope.session_id, rows,
+            status_override="active" if scope.confirm else "pending",
+        )
         latency = round((_time.perf_counter() - t0) * 1000, 1)
         self.be.audit("core", "extract.done", f"sessions/{scope.session_id}",
-                      {"produced": produced, "scanned": scanned, "ms": latency})
-        return ExtractResult(produced_active=0, produced_pending=produced, scanned_messages=scanned)
+                      {"produced": produced, "scanned": scanned, "ms": latency,
+                       "confirm": scope.confirm})
+        return ExtractResult(produced_active=produced if scope.confirm else 0,
+                             produced_pending=0 if scope.confirm else produced,
+                             scanned_messages=scanned)
 
     def memory_recall(self, query: str, time_hint: str | None = None, limit: int = 20) -> RecallResult:
         """快速路径（无 judge）：结构化过滤主力（memories 逐词匹配 + 类型/时间过滤）

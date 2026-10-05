@@ -58,10 +58,15 @@ def run_extraction(
     backend: StorageBackend,
     session_id: int,
     messages: list[tuple[int, UDFMessage]],
+    status_override: str = "pending",
 ) -> tuple[int, int, int]:
-    """执行一次结构化预沉淀。返回 (produced_pending, skipped_empty, scanned_messages)。
+    """执行一次结构化预沉淀。返回 (produced, skipped_empty, scanned_messages)。
 
-    - 每条候选写入 memories（inferred + pending，四强制字段齐全）；
+    status_override：
+    - "pending"（默认，机制扳机）——待确认，不进用户召回；
+    - "active"（用户显式 confirm）——立即生效（evidence 仍为 inferred，诚实不冒充）。
+
+    - 每条候选四强制字段齐全（backend.add_memory 集中强制）；
     - 同 (kind, statement, source_message_id) 幂等（应用层查重）；
     - statement 中出现的已有实体 → 记 mem_mentions。
     """
@@ -83,14 +88,14 @@ def run_extraction(
             source_message_id=cand.source_message_id,
             session_id=session_id,
             evidence_level="inferred",
-            status="pending",
+            status=status_override,
         )
         produced += 1
         for eid in _match_existing_entities(backend, cand.statement):
             backend.record_mention(cand.source_message_id, eid)
     backend.audit(
         "core", "extract", f"sessions/{session_id}",
-        {"scanned": scanned, "produced_pending": produced,
-         "mode": "heuristic-no-judge"},
+        {"scanned": scanned, "produced": produced,
+         "mode": "heuristic-no-judge", "status": status_override},
     )
     return produced, scanned - len(candidates), scanned

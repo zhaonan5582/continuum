@@ -78,6 +78,23 @@ class TestWorkbuddyImporter(unittest.TestCase):
         rep2 = import_workbuddy_session(self.jsonl, self.be)   # 重导：全部去重
         self.assertEqual(rep2.imported_messages, 0)
 
+    def test_oversized_line_skipped_not_fatal(self):
+        """探针24 回归：一条超大行只跳过自身，不毁掉整个会话导入。"""
+        import json as _json
+        big = self.td.name + "/big.jsonl"
+        lines = [
+            {"type": "message", "role": "user", "sessionId": "big",
+             "timestamp": 1786606666212, "content": [{"type": "input_text", "text": "正常消息一"}]},
+            {"type": "message", "role": "user", "sessionId": "big",
+             "timestamp": 1786606666300, "content": [{"type": "input_text", "text": "B" * 20_000_000}]},
+            {"type": "message", "role": "user", "sessionId": "big",
+             "timestamp": 1786606666400, "content": [{"type": "input_text", "text": "正常消息三"}]},
+        ]
+        Path(big).write_text("\n".join(_json.dumps(x) for x in lines), encoding="utf-8")
+        rep = import_workbuddy_session(big, self.be)
+        self.assertEqual(rep.imported_messages, 2, "正常消息应导入")
+        self.assertEqual(rep.skipped_oversized, 1, "超限行应跳过并计数")
+
 
 class TestLifecycleWiring(unittest.TestCase):
     """P1-B：生命周期扳机装配——sweep_fn 默认接到 extract；会话结束/定时均触发沉淀。"""
@@ -85,10 +102,10 @@ class TestLifecycleWiring(unittest.TestCase):
     def test_sweeper_wired_to_extract(self):
         be = SQLiteBackend(":memory:", MIGRATIONS)
         srv = ContinuumServer(be)
-        # 装配：sweep_fn 接 extract（P1-B 提供的默认接线）
+        # 装配：sweep_fn 接 extract（P1-B 提供的默认接线）——机制扳机 → pending
         sch = SweeperScheduler(backend=be, every_n_rounds=3, every_hours=999)
         sch.sweep_fn = lambda sid: srv.memory_extract(
-            ExtractScope(session_id=sid, since_ts=None))
+            ExtractScope(session_id=sid, since_ts=None))   # 无 confirm → pending
 
         # 落库 3 轮 → 第 3 轮触发 sweeping → 产生 pending 沉淀
         srv.memory_append(AppendRequest(host_agent="w", external_session_id="s1", messages=(
@@ -101,7 +118,27 @@ class TestLifecycleWiring(unittest.TestCase):
         pending = be.conn.execute(
             "SELECT COUNT(*) c FROM memories WHERE status='pending'"
         ).fetchone()["c"]
-        self.assertGreaterEqual(pending, 1, "sweeping 触发后应产生结构化预沉淀")
+        self.assertGreaterEqual(pending, 1, "sweeping 触发后应产生结构化预沉淀（pending）")
+        # sweeping 产出的 pending 不进用户召回（探针23 语义）
+        r = srv.memory_recall("方案A")
+        self.assertFalse(any(i.kind == "decision" for i in r.items),
+                         "机制扳机的 pending 不应直接进用户召回")
+
+    def test_confirm_extract_produces_active(self):
+        """探针23 修复回归：用户显式 confirm → active → 可召回。"""
+        be = SQLiteBackend(":memory:", MIGRATIONS)
+        srv = ContinuumServer(be)
+        srv.memory_append(AppendRequest(host_agent="w", external_session_id="s", messages=(
+            __import__("continuum.udf", fromlist=["UDFMessage"]).UDFMessage(
+                ts="2026-10-05T10:00:00.000Z", role="user", host="w", session_id="s",
+                content="我们决定采用方案A，性能优先。"),
+        )))
+        srv.memory_extract(ExtractScope(session_id=None, confirm=True))   # 用户拍板
+        r = srv.memory_recall("方案A")
+        self.assertTrue(any(i.kind == "decision" for i in r.items),
+                        "confirm 沉淀必须立即可召回")
+        sts = [dict(x)["status"] for x in be.conn.execute("SELECT status FROM memories")]
+        self.assertIn("active", sts)
         be.close()
 
 
