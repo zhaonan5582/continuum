@@ -1,0 +1,16 @@
+Continuum — cross-agent persistent memory & persona layer
+Copyright (C) 2026 Continuum contributors
+
+This program is free software: you can redistribute it and/or modify it
+under the terms of the GNU Affero General Public License as published
+by the Free Software Foundation, version 3 only (AGPL-3.0-only).
+
+Full license text: see the LICENSE file in this repository.
+SPDX-License-Identifier: AGPL-3.0-only
+
+Additional note on trademarks:
+  The names "Continuum" and the project logo (once registered) are
+  trademarks and are NOT licensed under AGPL-3.0. Forks must rename.
+
+Pro edition modules and the hosted service (if any) are NOT part of
+this AGPL repository unless explicitly stated otherwise.

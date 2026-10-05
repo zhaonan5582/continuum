@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "continuum-core"
+version = "0.0.1"
+description = "Continuum — cross-agent persistent memory & persona layer (local-first, MCP-native)"
+readme = "README.md"
+requires-python = ">=3.13"
+license = "AGPL-3.0-only"
+license-files = ["LICENSE"]
+authors = [{ name = "Continuum contributors" }]
+# 核心零第三方依赖：sqlite3/dataclasses/json/hashlib 全部标准库。
+# MCP server 装配（P1）与向量索引（P3）依赖另行声明，不进核心。
+dependencies = []
+
+[project.optional-dependencies]
+# P1: mcp = ["mcp>=1.0"]  # 冻结于 P1 启动时
+# P3: vectors = ["sqlite-vec", "fastembed"]
+dev = ["pytest>=8.0"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["continuum*"]
+# 构建裁剪（设计宪法 7 / docs/03）：free 构建剔除 pro 命名空间。
+# pro 模块位于独立私有仓库，以 CONTINUUM_ENABLE_PRO 注入；
+# 本仓库不含任何 pro 代码，双构建 = 本仓库构建（free）与私仓叠加构建（pro）。
+exclude = ["continuum.pro*"]

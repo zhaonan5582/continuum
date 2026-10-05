@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://continuum.dev/schemas/udf-v1.json",
+  "title": "Continuum UDF v1 (frozen)",
+  "description": "Unified Dialogue Format — the only input format of the Continuum core. Contract: field names and semantics are frozen; new optional fields require UDF_VERSION bump.",
+  "type": "object",
+  "required": ["ts", "role", "host", "session_id", "content"],
+  "additionalProperties": false,
+  "properties": {
+    "udf_version": { "const": 1 },
+    "ts": {
+      "type": "string",
+      "description": "ISO8601 timestamp with timezone, e.g. 2026-10-05T12:00:00.000Z",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})$"
+    },
+    "role": { "enum": ["user", "assistant", "tool"] },
+    "host": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Host agent identifier, lowercase kebab-case, e.g. workbuddy, claude-code, codex"
+    },
+    "session_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Host-side external session id (opaque to core)"
+    },
+    "content": {
+      "type": "string",
+      "description": "Verbatim message body. Never rewritten by core."
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tool": { "type": ["string", "null"], "description": "Tool name when role=tool" },
+        "tokens": { "type": ["integer", "null"], "minimum": 0 }
+      }
+    }
+  }
+}

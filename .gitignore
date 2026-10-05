@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Continuum local data (never commit user memories!)
+*.continuum.db
+*.continuum.db-wal
+*.continuum.db-shm
+*.db-journal
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Local secrets & pro modules (pro lives in a private repo, never here)
+.env
+.env.*
+secrets/
+pro/
