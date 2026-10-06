@@ -109,6 +109,8 @@ class SQLiteBackend(StorageBackend):
                 )
                 if cur.rowcount == 0:  # 幂等命中：同一消息重复推送
                     skipped += 1
+                    seq -= 1          # 回退：IGNORE 的行不消耗序号（否则幂等重扫在 seq 留洞，
+                                      # 2026-10-06 生产库实测：重扫一次留 875 个洞 → 已重排修复）
                     continue
                 accepted.append(int(cur.lastrowid))
             self.conn.execute("COMMIT")
