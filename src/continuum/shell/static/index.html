@@ -40,6 +40,10 @@
   nav a:hover { color: #fff; background: rgba(255,255,255,.09); }
   .lang-btn { border: 1px solid rgba(255,255,255,.25); background: transparent; color: #cbd5e1;
               border-radius: 8px; padding: 5px 12px; cursor: pointer; font-size: 12px; }
+  #lang-select { background: rgba(255,255,255,.08); color: #e2e8f0;
+                 border: 1px solid rgba(255,255,255,.25); border-radius: 8px;
+                 padding: 5px 10px; font-size: 12px; cursor: pointer; }
+  #lang-select option { color: #0f172a; background: #ffffff; }
   .lang-btn:hover { color: #fff; border-color: #fff; }
   main { max-width: 1400px; margin: 22px auto; padding: 0 24px;
          display: grid; grid-template-columns: 6fr 5fr; gap: 20px; align-items: start; }
@@ -311,7 +315,6 @@ function setLang(lang) {
 (function initLangSelect() {
   const sel = document.createElement("select");
   sel.id = "lang-select";
-  sel.className = "lang-btn";
   sel.style.cursor = "pointer";
   sel.onchange = () => setLang(sel.value);
   for (const [code, label] of LANGUAGES) {
