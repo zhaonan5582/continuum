@@ -14,10 +14,12 @@ from __future__ import annotations
 import re
 
 # (编译模式, kind) —— 顺序即优先级
+# 注意：「红线」二字本身不作为触发词（2026-10-06 8100 实测教训：标题「## 红线」、
+# 汇报句「红线守住」全是元话语不是立规）——真正的立规语句含「严禁/不许/不能动」等。
 PATTERNS: list[tuple[re.Pattern, str]] = [
     (re.compile(r"(决定|拍板|敲定|定了[，,：:]|就定|确定用|选定)"), "decision"),
     (re.compile(r"(约定|说好[了的]?|以后都|以后一律|从今以后|咱们的规矩|固定用)"), "convention"),
-    (re.compile(r"(不许|不准|不能动|禁止|别再|绝对不要|红线|严禁)"), "redline"),
+    (re.compile(r"(不许|不准|不能动|禁止|别再|绝对不要|严禁)"), "redline"),
     (re.compile(r"(试过|试了|走不通|失败[了]|排除|放弃|不行[，,了]|不可行)"), "exclusion"),
     (re.compile(r"(偏好|我习惯|我喜欢|我一般|我喜欢用)"), "preference"),
     (re.compile(r"(注意|记住|重要[：:]|关键是)"), "fact"),
@@ -25,11 +27,13 @@ PATTERNS: list[tuple[re.Pattern, str]] = [
 
 # 句子切分（中英文标点 + 换行）
 _SENT_SPLIT = re.compile(r"[。！？!?\n；;]+")
+_MARKDOWN_HEADING = re.compile(r"^#{1,6}\s")   # markdown 标题行是文档结构，不是话语
 
 
 def split_sentences(text: str) -> list[str]:
-    """按中英文句读切句，去空、去纯空白，保留原文顺序。"""
-    return [s.strip() for s in _SENT_SPLIT.split(text) if s.strip()]
+    """按中英文句读切句，去空、去纯空白、去 markdown 标题行，保留原文顺序。"""
+    return [s.strip() for s in _SENT_SPLIT.split(text)
+            if s.strip() and not _MARKDOWN_HEADING.match(s.strip())]
 
 
 def classify(sentence: str) -> str | None:

@@ -27,6 +27,23 @@ class TestHeuristics(unittest.TestCase):
     def test_redline_pattern(self):
         self.assertEqual(extract_candidates_from_text("不许动红线文件！")[0][0], "redline")
 
+    def test_markdown_heading_not_extracted(self):
+        """标题行是文档结构不是话语（8100 实测：## 红线 曾被当成 redline 抽入）。"""
+        self.assertEqual(extract_candidates_from_text("## 红线\n严禁删除参照站"), [
+            ("redline", "严禁删除参照站"),
+        ])
+
+    def test_meta_discourse_not_extracted(self):
+        """「红线守住」是汇报不是立规——「红线」二字不作触发词。"""
+        self.assertEqual(extract_candidates_from_text("红线守住——真站全程只读，写端点只在本地库生效"), [])
+
+    def test_real_redline_still_caught(self):
+        """收紧触发词后，真正的立规语句不受影响（中文逗号不切句，整句一条）。"""
+        out = extract_candidates_from_text("严禁删除参照站数据，绝对不要动海特的库！")
+        self.assertEqual(len(out), 1)
+        self.assertEqual(out[0][0], "redline")
+        self.assertIn("严禁删除参照站数据", out[0][1])
+
     def test_exclusion_pattern(self):
         self.assertEqual(extract_candidates_from_text("Neo4j 方案试过了，走不通。")[0][0], "exclusion")
 
