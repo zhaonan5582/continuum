@@ -216,9 +216,10 @@ def cmd_feed(args) -> int:
     be = _open_backend(args.db)
     feed = WorkbuddyFeed.build_default(be)
     if feed is None:
-        print("未找到会话目录 ~/.workbuddy/projects——无喂食对象")
+        # 无喂食对象不是失败：计划任务场景返回 0，避免被系统误标为失败任务
+        print("未找到会话目录 ~/.workbuddy/projects——无喂食对象（正常退出）")
         be.close()
-        return 1
+        return 0
     if args.watch:
         feed.start_background(args.interval)
         try:

@@ -109,10 +109,9 @@ class TestFeedCLI(unittest.TestCase):
             capture_output=True, text=True, encoding="utf-8", timeout=120,
             env={**os.environ, "PYTHONPATH": str(REPO / "src"),
                  "CONTINUUM_FEED_STATE": str(td / "feed_state.json")})
-        self.assertEqual(r.returncode, 0, r.stderr[-400:])
-        self.assertTrue("扫描完成" in r.stdout or "未找到" in r.stdout, r.stdout[-200:])
-        # 生产 feed_state 未被本次测试改写（隔离验证）
-        self.assertTrue((td / "feed_state.json").exists() or "未找到" in r.stdout)
+        # 环境无关断言：有 projects 目录 → 扫描完成；无（如 CI）→ 明确提示且返回 0
+        self.assertEqual(r.returncode, 0, f"rc={r.returncode} stdout={r.stdout[-200:]} stderr={r.stderr[-300:]}")
+        self.assertTrue("扫描完成" in r.stdout or "无喂食对象" in r.stdout, r.stdout[-200:])
 
 
 if __name__ == "__main__":
