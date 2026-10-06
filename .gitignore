@@ -42,3 +42,5 @@ mac55.log
 j58.json
 mac58.log
 run58b.json
+ci*.log
+*.log
