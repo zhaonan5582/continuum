@@ -22,20 +22,24 @@
   nav a { text-decoration: none; padding: 7px 14px; border-radius: 8px;
           font-size: 13px; color: var(--muted); }
   nav a:hover { background: var(--brand-weak); color: var(--brand); }
-  main { max-width: 1060px; margin: 22px auto; padding: 0 20px; }
+  main { max-width: 1400px; margin: 22px auto; padding: 0 24px;
+         display: grid; grid-template-columns: 6fr 5fr; gap: 18px;
+         align-items: start; }
+  #msg { grid-column: 1 / -1; }
+  .col { display: flex; flex-direction: column; min-width: 0; }
   section { scroll-margin-top: 70px; }
   .card { background: var(--card); border-radius: var(--radius);
           box-shadow: 0 1px 3px rgba(15,23,42,.06), 0 4px 14px rgba(15,23,42,.04);
           padding: 18px 20px; margin-bottom: 16px; }
   .card h2 { font-size: 15px; margin-bottom: 12px; color: var(--text); }
-  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap: 12px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px,1fr)); gap: 10px; }
   .stat { background: var(--bg); border-radius: 10px; padding: 12px 14px; }
   .stat b { display: block; font-size: 22px; color: var(--brand); }
   .stat span { color: var(--muted); font-size: 12px; }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
   th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); }
   th { color: var(--muted); font-weight: 500; }
-  input[type=text], textarea, select {
+  input[type=text], textarea, select, input[type=number] {
     width: 100%; border: 1px solid var(--line); border-radius: 8px;
     padding: 8px 10px; font: inherit; background: #fff; }
   textarea { min-height: 84px; resize: vertical; }
@@ -55,9 +59,10 @@
   .tag.off  { background: var(--line); color: var(--muted); }
   pre { background: var(--bg); border-radius: 10px; padding: 12px; overflow: auto;
         font-size: 12px; white-space: pre-wrap; word-break: break-all; }
-  .msg { padding: 8px 12px; border-radius: 8px; margin: 8px 0; font-size: 13px; display: none; }
+  .msg { padding: 8px 12px; border-radius: 8px; margin: 0 0 12px; font-size: 13px; display: none; }
   .msg.ok { background: #dcfce7; color: var(--ok); display: block; }
   .msg.bad { background: #fee2e2; color: var(--bad); display: block; }
+  @media (max-width: 1080px) { main { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -75,6 +80,7 @@
 <main>
   <div id="msg" class="msg"></div>
 
+  <div class="col">
   <!-- 总览 -->
   <section id="v-overview">
     <div class="card"><h2>库内统计</h2><div class="stats" id="stats"></div>
@@ -90,26 +96,6 @@
       </div>
       <pre id="ex-out" class="hide"></pre>
     </div>
-  </section>
-
-  <!-- 人格 -->
-  <section id="v-persona">
-    <div class="card"><h2>当前人格</h2><div id="persona-cur" class="muted">加载中…</div></div>
-    <div class="card"><h2>新建人格版本（覆盖式定版，历史可回溯）</h2>
-      <textarea id="persona-text" placeholder="人格状态块：身份、语气、协作默契、硬规矩……"></textarea>
-      <div class="row" style="margin-top:8px">
-        <input type="text" id="persona-reason" placeholder="修改原因（必填，进版本审计）">
-        <button class="pri" style="flex:0 0 auto" onclick="savePersona()">定版</button>
-      </div></div>
-    <div class="card"><h2>追加 few-shot 样本（挂到当前版本）</h2>
-      <div class="row"><input type="text" id="ps-user" placeholder="用户说…"></div>
-      <div class="row" style="margin-top:8px"><input type="text" id="ps-agent" placeholder="期望助手答…"></div>
-      <div class="row" style="margin-top:8px">
-        <input type="text" id="ps-tag" placeholder="标签（可选）">
-        <button class="pri" style="flex:0 0 auto" onclick="addSample()">追加样本</button>
-      </div>
-      <div id="ps-list" style="margin-top:10px"></div></div>
-    <div class="card"><h2>版本历史</h2><table id="pv-tab"><thead><tr><th>版本</th><th>原因</th><th>时间</th></tr></thead><tbody></tbody></table></div>
   </section>
 
   <!-- 红线 -->
@@ -131,6 +117,28 @@
       <div class="row" style="margin-top:8px"><span class="muted" style="flex:1">期望动作缺省：positive→block，negative→allow</span>
         <button class="pri" style="flex:0 0 auto" onclick="addRt()">录入用例</button></div></div>
   </section>
+  </div>
+
+  <div class="col">
+  <!-- 人格 -->
+  <section id="v-persona">
+    <div class="card"><h2>当前人格</h2><div id="persona-cur" class="muted">加载中…</div></div>
+    <div class="card"><h2>新建人格版本（覆盖式定版，历史可回溯）</h2>
+      <textarea id="persona-text" placeholder="人格状态块：身份、语气、协作默契、硬规矩……"></textarea>
+      <div class="row" style="margin-top:8px">
+        <input type="text" id="persona-reason" placeholder="修改原因（必填，进版本审计）">
+        <button class="pri" style="flex:0 0 auto" onclick="savePersona()">定版</button>
+      </div></div>
+    <div class="card"><h2>追加 few-shot 样本（挂到当前版本）</h2>
+      <div class="row"><input type="text" id="ps-user" placeholder="用户说…"></div>
+      <div class="row" style="margin-top:8px"><input type="text" id="ps-agent" placeholder="期望助手答…"></div>
+      <div class="row" style="margin-top:8px">
+        <input type="text" id="ps-tag" placeholder="标签（可选）">
+        <button class="pri" style="flex:0 0 auto" onclick="addSample()">追加样本</button>
+      </div>
+      <div id="ps-list" style="margin-top:10px"></div></div>
+    <div class="card"><h2>版本历史</h2><table id="pv-tab"><thead><tr><th>版本</th><th>原因</th><th>时间</th></tr></thead><tbody></tbody></table></div>
+  </section>
 
   <!-- 检索 -->
   <section id="v-recall">
@@ -146,6 +154,7 @@
       <button class="pri" onclick="runDoctor()">运行体检</button>
       <pre id="dt-out" class="hide"></pre></div>
   </section>
+  </div>
 </main>
 <script>
 const $ = s => document.querySelector(s);
@@ -172,7 +181,7 @@ async function loadOverview() {
     `<tr><td>${x.id}</td><td>${esc((x.external_id||"").slice(0,18))}…</td>
      <td>${esc((x.project_id||"").slice(0,28))}</td><td>${x.messages}</td>
      <td>${esc(x.title||"")}</td></tr>`).join("");
-  $("#ov-hint").textContent = "消息按会话独立存储、永不混合；记忆条目跨会话汇总且每条带溯源指针；人格为全局单份（版本化，下方人格块维护）。";
+  $("#ov-hint").textContent = "消息按会话独立存储、永不混合；记忆条目跨会话汇总且每条带溯源指针；人格为全局单份（版本化，右列人格块维护）。";
 }
 async function doExtract() {
   try {
