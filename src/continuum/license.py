@@ -17,12 +17,14 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
-DEFAULT_LICENSE_PATH = Path.home() / ".continuum" / "license.json"
+DEFAULT_LICENSE_PATH = Path(os.environ.get(
+    "CONTINUUM_LICENSE_PATH") or (Path.home() / ".continuum" / "license.json"))
 
 KEY_RE = re.compile(r"^[A-Z0-9]{4}(-[A-Z0-9]{4}){3}$")
 

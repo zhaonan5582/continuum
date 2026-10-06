@@ -29,7 +29,9 @@ class TestEndToEnd(unittest.TestCase):
         cls.db = str(Path(cls.td.name) / "e2e.continuum.db")
         cls.port = 8712
         cls.base = f"http://127.0.0.1:{cls.port}"
-        env = {**os.environ, "PYTHONPATH": str(REPO / "src"), "PYTHONIOENCODING": "utf-8"}
+        env = {**os.environ, "PYTHONPATH": str(REPO / "src"), "PYTHONIOENCODING": "utf-8",
+               # license 路径隔离：E2E 测试绝不触碰生产 license.json（2026-10-06 污染事故）
+               "CONTINUUM_LICENSE_PATH": str(Path(cls.td.name) / "license.json")}
         cls.proc = subprocess.Popen(
             [PY, "-m", "continuum.cli", "--db", cls.db, "shell",
              "--port", str(cls.port), "--no-browser"],
