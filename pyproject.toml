@@ -35,4 +35,4 @@ exclude = ["continuum.pro*"]
 [tool.setuptools.package-data]
 # 迁移 sql 必须随包分发——serve 首次启动 migrate 依赖它们
 # 壳前端单页随包分发——shell 模式加载
-continuum = ["storage/migrations/sql/*.sql", "shell/static/*.html"]
+continuum = ["storage/migrations/sql/*.sql", "shell/static/*.html", "shell/static/*.js"]

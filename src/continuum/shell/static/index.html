@@ -130,7 +130,7 @@
   <span class="run-badge"><i></i><span data-i18n="running">服务运行中</span></span>
   <nav>
     <a href="#v-license" style="display:flex;align-items:center;gap:6px">🔑 <span data-i18n="nav_license">授权</span></a>
-    <button class="lang-btn" onclick="toggleLang()">EN</button>
+    
   </nav>
 </header>
 <main>
@@ -279,63 +279,49 @@
   </section>
   </div>
 </main>
+<script src="i18n.js"></script>
 <script>
-/* ---- i18n ---- */
-const I18N = {
-  zh: {"running":"服务运行中","nav_overview":"总览","nav_persona":"人格","nav_redlines":"红线","nav_recall":"检索","nav_license":"授权","nav_doctor":"体检",
-    "h_stats":"库内统计","h_sessions":"会话","h_sessions_sub":"（各自独立，消息不混合——点「查看」浏览完整内容）","h_extract":"沉淀","h_extract_sub":"（跨会话扫描 → 结构化记忆）",
-    "h_redlist":"红线列表","h_redadd":"录入红线","h_redcases":"补正反用例（防误伤）","h_persona":"人格","h_persona_edit":"新增 / 修改人格","h_fewshot":"对话样本（few-shot，挂当前套）",
-    "h_recall":"记忆检索","h_recall_sub":"（跨会话，每条带证据等级与原文指针）","h_license":"授权","h_doctor":"一键体检","h_doctor_sub":"（配置 / 记忆库 / 握手 / 生效指引）",
-    "t_session":"会话","t_project":"项目","t_msgcount":"消息数","t_actions":"操作","t_status":"状态","t_action":"动作","t_statement":"陈述","t_cases":"用例",
-    "t_version":"版本","t_reason":"原因","t_time":"时间","b_search":"搜索","b_close":"收起","b_extract_now":"立即沉淀","b_add":"录入","b_addcase":"录入用例","b_save_version":"定版","b_addsample":"追加样本","b_activate":"激活","b_rundoctor":"运行体检","b_guardtest":"执行正反测试集（防误伤回归）",
-    "l_confirm":"直接置为生效（勾选=人工确认）","o_positive":"正用例（该拦）","o_negative":"反用例（不该拦）",
-    "ph_pattern":"pattern（正则优先，写动作短语如：删除.*参照站）","ph_stmt":"红线陈述（逐字存储，禁止改写）","ph_scope":"范围（全局）","ph_rl_id":"红线编号","ph_sample":"样例目标",
-    "ph_pname":"人格套名称（如：老王 / 小陈——不同名称=不同人格，可随时切换）","ph_ptext":"人格状态块：身份、语气、协作默契、硬规矩……","ph_reason":"修改原因（进版本审计）","ph_user":"用户说…","ph_agent":"期望助手答…","ph_tag":"标签（可选）","ph_search":"关键词…","ph_license":"注册码（XXXX-XXXX-XXXX-XXXX）",
-    "hint_pattern":"提示：pattern 写「动作短语」或正则，不要只写名词——只写名词会误拦只读操作（如 pattern=参照站 会拦下「查询参照站」）。",
-    "hint_expected":"期望动作缺省：正用例→拦截，反用例→放行","hint_persona":"同名=该套的新版本；新名称=新建一套人格并自动切换激活。装配包始终携带当前激活的那套。",
-    "hint_license":"注册码激活后解锁对应版本能力。校验目前为本地骨架（格式+校验位），在线激活随商业化接入。",
-    "h_costcalc":"判决成本计算器","h_costcalc_sub":"（估算你的 key 判决支出）",
-    "l_judges_month":"每月判决次数：","l_per_judge":"单次判决","l_month_key":"你的 key 月支出（不含卡费）",
-    "l_price_in":"输入单价（$ / 百万 tokens）","l_price_out":"输出单价（$ / 百万 tokens）",
-    "hint_costcalc":"公式完全公开：判决次数 ×（1500 输入 tokens × 输入单价 + 300 输出 tokens × 输出单价）÷ 1M。判决只在沉淀时触发；批量判决可再降 60–70%。不含订阅费（月付/季付/年付另计）。token 费直接付给你的模型厂商，不经过我们。",
-    "s_history":"版本历史（可 diff 可回滚）",
-    "st_sessions":"会话","st_messages":"消息（原文层）","st_active":"生效记忆","st_pending":"待确认记忆","st_redlines":"生效红线","st_persona":"激活人格",
-    "e_unnamed":"未录入","e_none":"无","btn_view":"查看","pg_info":(o,l,t)=>`第 ${o+1}–${Math.min(o+l,t)} 条 / 共 ${t} 条`,
-    "who_user":"用户","who_agent":"助手","who_system":"系统","recall_none":"无命中——换个关键词试试","recall_meta":(ms,n,s)=>`延迟 ${ms}ms，命中 ${n} 条`,
-    "empty_persona":"尚未录入人格——在下方创建第一套。","empty_samples":"当前套还没有对话样本","empty_redlines":"暂无红线——录入后拦截引擎将据此工作","empty_recall":"无命中——换个关键词试试",
-    "lic_ok":"激活成功","lic_no":"未激活"},
-  en: {"running":"Service running","nav_overview":"Overview","nav_persona":"Persona","nav_redlines":"Redlines","nav_recall":"Search","nav_license":"License","nav_doctor":"Doctor",
-    "h_stats":"Library stats","h_sessions":"Sessions","h_sessions_sub":"(independent, never mixed — click View to browse full content)","h_extract":"Extraction","h_extract_sub":"(cross-session scan → structured memories)",
-    "h_redlist":"Redlines","h_redadd":"Add redline","h_redcases":"Positive/Negative cases (anti-false-positive)","h_persona":"Persona","h_persona_edit":"Create / Edit persona","h_fewshot":"Few-shot samples (attached to current set)",
-    "h_recall":"Memory search","h_recall_sub":"(cross-session, each with evidence level & source pointer)","h_license":"License","h_doctor":"Doctor","h_doctor_sub":"(config / db / handshake / activation guide)",
-    "t_session":"Session","t_project":"Project","t_msgcount":"Messages","t_actions":"Actions","t_status":"Status","t_action":"Action","t_statement":"Statement","t_cases":"Cases",
-    "t_version":"Version","t_reason":"Reason","t_time":"Time","b_search":"Search","b_close":"Close","b_extract_now":"Extract now","b_add":"Add","b_addcase":"Add case","b_save_version":"Save version","b_addsample":"Add sample","b_activate":"Activate","b_rundoctor":"Run doctor","b_guardtest":"Run positive/negative test suite",
-    "l_confirm":"Mark as active directly (checked = human confirmed)","o_positive":"Positive (should block)","o_negative":"Negative (should pass)",
-    "ph_pattern":"pattern (regex-first, action phrase e.g. delete.*refstation)","ph_stmt":"Redline statement (stored verbatim)","ph_scope":"Scope (global)","ph_rl_id":"Redline #","ph_sample":"Sample target",
-    "ph_pname":"Persona set name (different name = different persona, switchable)","ph_ptext":"Persona state block: identity, tone, collaboration norms, hard rules…","ph_reason":"Change reason (audited)","ph_user":"User said…","ph_agent":"Expected reply…","ph_tag":"Tag (optional)","ph_search":"Keywords…","ph_license":"License key (XXXX-XXXX-XXXX-XXXX)",
-    "hint_pattern":"Tip: write an action phrase or regex as pattern, not a bare noun — a noun pattern blocks read-only ops too (pattern=refstation blocks 'query refstation').",
-    "hint_expected":"Default expectation: positive→block, negative→allow","hint_persona":"Same name = new version of that set; new name = new persona set (auto-activated). The assembly package always carries the active one.",
-    "hint_license":"Activating a license key unlocks the corresponding tier. Validation is currently a local skeleton (format + checksum); online activation ships with commercialization.",
-    "h_costcalc":"Judgment cost calculator","h_costcalc_sub":"(estimate your key judgment spend)",
-    "l_judges_month":"Judgments per month:","l_per_judge":"Per judgment","l_month_key":"Your key monthly spend (card fee not included)",
-    "l_price_in":"Input price ($ / 1M tokens)","l_price_out":"Output price ($ / 1M tokens)",
-    "hint_costcalc":"Formula is fully open: judgments x (1,500 input tokens x input price + 300 output tokens x output price) / 1M. Judgments fire only on extraction; batch judging cuts cost another 60-70%. Subscription fees (monthly/quarterly/yearly) are separate. Token fees go directly to your model vendor - never through us.",
-    "s_history":"Version history (diffable, rollbackable)",
-    "st_sessions":"Sessions","st_messages":"Messages (verbatim)","st_active":"Active memories","st_pending":"Pending memories","st_redlines":"Active redlines","st_persona":"Active persona",
-    "e_unnamed":"Not set","e_none":"none","btn_view":"View","pg_info":(o,l,t)=>`${o+1}–${Math.min(o+l,t)} of ${t}`,
-    "who_user":"User","who_agent":"Agent","who_system":"System","recall_none":"No match — try other keywords","recall_meta":(ms,n,s)=>`${ms}ms, ${n} hits`,
-    "empty_persona":"No persona yet — create your first set below.","empty_samples":"No few-shot samples in this set","empty_redlines":"No redlines yet","empty_recall":"No match — try other keywords",
-    "lic_ok":"Activated","lic_no":"Not activated"},
-};
+/* ---- i18n ---- 语言包见 i18n.js（16 种语言） ---- */
 let LANG = localStorage.getItem("continuum_lang") || "zh";
-function t(key) { return (I18N[LANG][key] ?? I18N.zh[key] ?? key); }
+const LANGUAGES = [
+  ["zh","中文"],["zh-TW","繁體中文"],["en","English"],["ja","日本語"],["ko","한국어"],
+  ["es","Español"],["fr","Français"],["de","Deutsch"],["pt","Português"],["ru","Русский"],
+  ["it","Italiano"],["tr","Türkçe"],["vi","Tiếng Việt"],["id","Bahasa Indonesia"],["ar","العربية"],["hi","हिन्दी"],
+];
+function pack() { return I18N[LANG] || I18N.en || I18N.zh; }
+function t(key) { return (pack()[key] ?? I18N.en[key] ?? I18N.zh[key] ?? key); }
 function applyLang() {
+  document.documentElement.lang = LANG;
+  document.documentElement.dir = LANG === "ar" ? "rtl" : "ltr";
   document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
   document.querySelectorAll("[data-i18n-ph]").forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
-  document.querySelector(".lang-btn").textContent = LANG === "zh" ? "EN" : "中文";
+  const sel = document.getElementById("lang-select");
+  if (sel) sel.value = LANG;
   loadOverview(); loadPersona(); loadRedlines(); loadLicense();
 }
-function toggleLang() { LANG = LANG === "zh" ? "en" : "zh"; localStorage.setItem("continuum_lang", LANG); applyLang(); }
+function setLang(lang) {
+  LANG = I18N[lang] ? lang : "en";
+  localStorage.setItem("continuum_lang", LANG);
+  document.documentElement.lang = LANG;
+  document.documentElement.dir = LANG === "ar" ? "rtl" : "ltr";
+  const sel = document.getElementById("lang-select");
+  if (sel) sel.value = LANG;
+  applyLang();
+}
+(function initLangSelect() {
+  const sel = document.createElement("select");
+  sel.id = "lang-select";
+  sel.className = "lang-btn";
+  sel.style.cursor = "pointer";
+  sel.onchange = () => setLang(sel.value);
+  for (const [code, label] of LANGUAGES) {
+    const o = document.createElement("option");
+    o.value = code; o.textContent = label;
+    sel.appendChild(o);
+  }
+  const nav = document.querySelector("header nav");
+  nav.insertBefore(sel, nav.firstChild);
+})();
 
 const $ = s => document.querySelector(s);
 const esc = s => (s ?? "").toString().replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));

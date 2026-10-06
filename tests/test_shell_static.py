@@ -27,17 +27,24 @@ class TestShellStatic(unittest.TestCase):
         missing = sorted(used - defined)
         self.assertEqual(missing, [], f"JS 引用了未定义的 DOM id: {missing}")
 
-    def test_i18n_keys_symmetric(self):
-        """zh/en 语言包键集合必须对称（单边缺键 = 另一语言显示回退中文）。"""
-        zh = re.search(r"zh: \{([\s\S]*?)\n  en: \{", self.src).group(1)
-        en = re.search(r"en: \{([\s\S]*?)\n\};", self.src).group(1)
-        # 键格式为带引号的 "key":（收紧，避免值文本里的 word: 误报）
-        key_re = re.compile(r'["\']([a-z_]+)["\']\s*:')
-        zh_keys = set(key_re.findall(zh))
-        en_keys = set(key_re.findall(en))
-        self.assertEqual(zh_keys, en_keys,
-                         f"语言包键不对称: zh 有 en 无={sorted(zh_keys-en_keys)}, "
-                         f"en 有 zh 无={sorted(en_keys-zh_keys)}")
+    def test_i18n_16_packs_symmetric(self):
+        """16 语言包（i18n.js）键集合必须全部对称——单边缺键 = 该语言显示回退。"""
+        i18n_path = INDEX.parent / "i18n.js"
+        src = i18n_path.read_text(encoding="utf-8")
+        packs = re.findall(r'"([\w-]+)":\s*\{', src)
+        self.assertGreaterEqual(len(packs), 16, f"语言包不足 16 种: {packs}")
+        # 逐包提取（textual 切分："lang": { ... },）
+        sections = re.split(r'"[\w-]+":\s*\{', src)[1:]
+        key_sets = {lang: set(re.findall(r'["\']([a-z_]+)["\']\s*:', body))
+                    for lang, body in zip(packs, sections)}
+        en_keys = key_sets.get("en", set())
+        asym = {l: sorted(key_sets[l] ^ en_keys) for l in packs
+                if key_sets[l] != en_keys}
+        self.assertEqual(asym, {}, f"语言包键不对称: {asym}")
+
+    def test_html_references_i18n_js(self):
+        """index.html 必须引用 i18n.js（语言包外置后不得遗漏）。"""
+        self.assertIn('<script src="i18n.js"></script>', self.src)
 
     def test_js_syntax_if_node_available(self):
         """JS 语法整体验证（node 可用时；CI/开发机均有，纯 Python 环境跳过）。"""
