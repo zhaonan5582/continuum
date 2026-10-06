@@ -59,16 +59,22 @@ class ShellHandler(BaseHTTPRequestHandler):
             return {}
         if length <= 0 or length > self.MAX_BODY:
             return {}
-        # 读体前轮询可达性（2s）：body 已发的场景必到；没到 = 客户端/代理异常，
-        # 快速明确失败——绝不永久卡（2026-10-06 实测死锁修复）
+        # 读体阶段临时 5s socket 超时：body 真未到达（代理/客户端失配）时快速失败
+        # 绝不永久卡；正常场景 body 已被 BufferedReader 预读进缓冲，read 立即返回
         try:
-            import select as _select
-            ready, _, _ = _select.select([self.rfile], [], [], 2.0)
-            if not ready:
-                return {}
+            self.connection.settimeout(5.0)
         except (OSError, ValueError):
             pass
-        return json.loads(self.rfile.read(length).decode("utf-8"))
+        try:
+            data = self.rfile.read(length)
+        except (TimeoutError, OSError):
+            return {}
+        finally:
+            try:
+                self.connection.settimeout(None)
+            except (OSError, ValueError):
+                pass
+        return json.loads(data.decode("utf-8"))
         return json.loads(self.rfile.read(length).decode("utf-8"))
 
     # ---- 路由 ----
