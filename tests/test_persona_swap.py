@@ -119,5 +119,50 @@ class TestPersonaSwap(unittest.TestCase):
 
 import time  # noqa: E402  （置底供 test_a 使用）
 
+
+class TestPersonaBlindSwap(unittest.TestCase):
+    """P3 验收①：同底座人格盲测——版本 A→B 切换，装配包必须跟着换
+    （状态块 + few-shot 样本都进 persona_md 与 L0，不再有硬编码占位）。"""
+
+    def setUp(self):
+        self.be = SQLiteBackend(":memory:", MIGRATIONS)
+        self.srv = ContinuumServer(self.be)
+        v_a = self.be.persona_create(
+            "你是老王：干练直接，汇报必须带数字。", change_reason="初版 A")
+        self.be.persona_add_sample(
+            v_a, user_utterance="状态如何？", agent_response="3 个模块全绿，0 阻塞。")
+        v_b = self.be.persona_create(
+            "你是小陈：细致温和，先列计划再动手。", change_reason="切换 B", parent_version=v_a)
+        self.be.persona_add_sample(
+            v_b, user_utterance="状态如何？", agent_response="我先列个清单再答。")
+
+    def tearDown(self):
+        self.be.close()
+
+    def test_switch_follows_latest_version(self):
+        md = self.srv.persona_current_md()
+        self.assertIn("小陈", md)
+        self.assertNotIn("老王", md)                      # A 被切换掉
+        self.assertIn("我先列个清单再答", md)              # few-shot 跟随当前版本
+        self.assertIn("persona v2", md)
+
+    def test_assemble_l0_carries_persona(self):
+        pkg = self.srv.memory_assemble(project_id=None)
+        self.assertIn("小陈", pkg.snapshot_md)             # L0 不再是硬编码占位
+        self.assertIn("细致温和", pkg.snapshot_md)
+        self.assertIn("小陈", pkg.persona_md)
+
+    def test_empty_library_placeholder(self):
+        """冷库（无人格版本）保持占位——正常态非故障，文案面向用户（非开发黑话）。"""
+        be2 = SQLiteBackend(":memory:", MIGRATIONS)
+        try:
+            md = ContinuumServer(be2).persona_current_md()
+            self.assertIn("尚未录入人格", md)
+            self.assertIn("continuum persona version", md)
+            self.assertNotIn("P3", md)          # 开发期黑话不外泄
+        finally:
+            be2.close()
+
+
 if __name__ == "__main__":
     unittest.main()

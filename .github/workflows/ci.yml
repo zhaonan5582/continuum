@@ -31,5 +31,24 @@ jobs:
       - name: Full test suite (unittest, zero-dependency)
         run: python -m unittest discover -s tests -v
 
+      - name: Install smoke (pip install + CLI + MCP handshake)
+        shell: bash
+        run: |
+          python -m pip install --quiet ".[mcp]"
+          continuum --version
+          python - <<'EOF'
+          import json, subprocess, sys
+          p = subprocess.run(
+              [sys.executable, "-m", "continuum.cli", "serve", "--db", ":memory:"],
+              input=json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize",
+                                "params": {"protocolVersion": "2024-11-05",
+                                           "capabilities": {},
+                                           "clientInfo": {"name": "ci-pkg", "version": "0"}}}) + "\n",
+              capture_output=True, text=True, encoding="utf-8", timeout=60)
+          resp = json.loads(p.stdout.splitlines()[0])
+          assert resp["result"]["serverInfo"]["name"] == "continuum", resp
+          print("packaged serve handshake OK")
+          EOF
+
       - name: Privacy check — no network libraries in core
         run: python tests/check_no_network.py

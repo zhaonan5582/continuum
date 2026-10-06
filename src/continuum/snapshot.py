@@ -77,18 +77,21 @@ def materialize_l1(backend: StorageBackend, project_id: str | None = None,
     return "\n".join(lines)
 
 
-def materialize_l0(backend: StorageBackend, budget_tokens: int = 2_000) -> str:
-    """L0 人格与默契：P2 阶段 persona 为占位（引擎 P3 上线），含项目清单与红线概况。"""
+def materialize_l0(backend: StorageBackend, budget_tokens: int = 2_000,
+                   persona_text: str | None = None) -> str:
+    """L0 人格与默契：有 persona_text 时装载真实人格（状态块+few-shot），
+    无则占位（冷库正常态）；含项目清单与红线概况。"""
     projects = backend.conn.execute(
         "SELECT DISTINCT project_id FROM sessions WHERE project_id IS NOT NULL LIMIT 20"
     ).fetchall()
     redline_count = backend.conn.execute(
         "SELECT COUNT(*) c FROM memories WHERE kind='redline' AND status='active'"
     ).fetchone()["c"]
+    persona_section = (persona_text or "（尚未录入人格——用 `continuum persona version` 创建后随装配包注入）").strip()
     lines = [
         "# L0 全局状态",
         "## 人格与默契",
-        "（人格引擎于 P3 上线；当前阶段协作规则由装配方注入）",
+        persona_section,
         "## 活跃项目",
     ]
     for r in projects:

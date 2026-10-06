@@ -170,6 +170,43 @@ def cmd_doctor(args) -> int:
     return run_doctor()
 
 
+def cmd_redline_add(args) -> int:
+    be = _open_backend(args.db)
+    rid = be.add_redline(pattern=args.pattern, statement=args.statement,
+                         action=args.action, scope=args.scope)
+    print(f"红线 #{rid} 已录入（action={args.action}, scope={args.scope}）——"
+          f"用 `redline test --redline-id {rid}` 补正反用例防误伤")
+    be.close()
+    return 0
+
+
+def cmd_redline_list(args) -> int:
+    import sqlite3 as _sq
+    be = _open_backend(args.db)
+    rows = be.conn.execute(
+        "SELECT r.id, r.pattern, r.statement, r.action, r.scope, r.enabled,"
+        " (SELECT COUNT(*) FROM redline_tests t WHERE t.redline_id=r.id) AS cases"
+        " FROM redlines r ORDER BY r.id").fetchall()
+    if not rows:
+        print("（无红线——用 `redline add` 录入）")
+    for r in rows:
+        mark = "✓" if r["enabled"] else "✗"
+        print(f"#{r['id']} [{mark}] {r['action']:<5} {r['scope']:<12} 用例{r['cases']}  {r['statement']}")
+        print(f"      pattern: {r['pattern']}")
+    be.close()
+    return 0
+
+
+def cmd_redline_test_add(args) -> int:
+    expected = args.expected or ("block" if args.case == "positive" else "allow")
+    be = _open_backend(args.db)
+    tid = be.add_redline_test(args.redline_id, args.case, args.sample,
+                              expected_action=expected)
+    print(f"用例 #{tid} 已录（{args.case}, expected={expected}）——`guard-test` 执行")
+    be.close()
+    return 0
+
+
 def _read_hook_stdin(injected: str | None = None) -> dict:
     """读 Claude Code hook 的 stdin JSON（解析失败返回空 dict，不挂死）。
     injected 非空时直接使用（测试/编程调用），不读 stdin。"""
@@ -309,6 +346,24 @@ def build_parser() -> argparse.ArgumentParser:
 
     gt = sub.add_parser("guard-test", help="执行红线正反测试集（防误伤回归）")
     gt.set_defaults(func=cmd_guard_test)
+
+    rl = sub.add_parser("redline", help="红线与正反测试集管理")
+    rlsub = rl.add_subparsers(dest="redline_cmd", required=True)
+    rl_add = rlsub.add_parser("add", help="录入红线（memory_guard 据此拦截）")
+    rl_add.add_argument("--pattern", required=True, help="匹配模式（对 target/detail 做包含匹配）")
+    rl_add.add_argument("--statement", required=True, help="红线陈述（逐字存储，禁止改写）")
+    rl_add.add_argument("--action", choices=["block", "warn", "ask"], default="block")
+    rl_add.add_argument("--scope", default="global", help="global 或 project:<id>")
+    rl_add.set_defaults(func=cmd_redline_add)
+    rl_list = rlsub.add_parser("list", help="列红线（含用例计数）")
+    rl_list.set_defaults(func=cmd_redline_list)
+    rl_t = rlsub.add_parser("test", help="录正反用例（positive=该拦 / negative=不该拦）")
+    rl_t.add_argument("--redline-id", type=int, required=True)
+    rl_t.add_argument("--case", choices=["positive", "negative"], required=True)
+    rl_t.add_argument("--sample", required=True, help="样例 target")
+    rl_t.add_argument("--expected", choices=["block", "warn", "allow", "ask"], default=None,
+                      help="缺省：positive=block / negative=allow")
+    rl_t.set_defaults(func=cmd_redline_test_add)
     return p
 
 

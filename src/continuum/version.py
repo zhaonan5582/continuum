@@ -6,7 +6,7 @@
 并走「机械交叉检索」检查引用残留（修订纪律）。
 """
 
-VERSION = "0.0.1"           # 包版本（P4 发布 v0.1）
+VERSION = "0.1.0"           # 包版本（P4 发布 v0.1；与 pyproject.toml 同步）
 SCHEMA_VERSION = 1          # 存储库 schema 版本（PRAGMA user_version）
 UDF_VERSION = 1             # 统一对话格式版本（契约冻结，只增不改）
 

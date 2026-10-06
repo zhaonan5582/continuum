@@ -395,6 +395,15 @@ class SQLiteBackend(StorageBackend):
         )
         return int(cur.lastrowid)
 
+    def persona_samples_for(self, persona_version: int, limit: int = 10) -> list[dict]:
+        """某版本的 few-shot 样本（按 id 升序=录入顺序；装配用）。"""
+        rows = self.conn.execute(
+            "SELECT id, user_utterance, agent_response, tag FROM persona_samples"
+            " WHERE persona_version = ? ORDER BY id LIMIT ?",
+            (persona_version, limit),
+        ).fetchall()
+        return [dict(r) for r in rows]
+
     def persona_samples(self, persona_version: int | None = None, limit: int = 100) -> list[dict]:
         where, params = "", []
         if persona_version is not None:

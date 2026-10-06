@@ -315,7 +315,7 @@ class ContinuumServer:
         from continuum.snapshot import estimate_tokens, materialize_l0, materialize_l1
 
         persona_md = self.persona_current_md()
-        l0 = materialize_l0(self.be)
+        l0 = materialize_l0(self.be, persona_text=persona_md)
         l1 = materialize_l1(self.be, project_id)
         recent_rows = self.be.fetch_messages_since(None, limit=20)
         recent = tuple(m.content for _, m in recent_rows)
@@ -420,8 +420,16 @@ class ContinuumServer:
         return results
 
     def persona_current_md(self) -> str:
-        """最新人格状态块文本（assemble 数据源；无版本返回占位）。"""
+        """当前人格完整文本（assemble 数据源）：最新版本状态块 + few-shot 样本。
+        无任何版本时返回占位（冷库正常态）。"""
         cur = self.be.persona_current()
         if cur is None:
-            return "（人格引擎于 P3 上线；当前协作规则见 L0/L1）"
-        return f"<!-- persona v{cur['version']} -->\n{cur['snapshot_md']}"
+            return "（尚未录入人格——用 `continuum persona version` 创建后随装配包注入）"
+        parts = [f"<!-- persona v{cur['version']} -->", cur["snapshot_md"]]
+        samples = self.be.persona_samples_for(cur["version"])
+        if samples:
+            parts.append(f"## few-shot 样本（{len(samples)} 条）")
+            for s in samples:
+                parts.append(f"【用户】{s['user_utterance']}")
+                parts.append(f"【助手】{s['agent_response']}")
+        return "\n".join(parts)
