@@ -250,6 +250,9 @@ class ContinuumServer:
         import time as _time
 
         t0 = _time.perf_counter()
+        # 查询规范化：控制字符（\r/\t/零宽）→ 空格——原文里的换行在两处都能被匹配到
+        # （2026-10-06 实测：截取片段含 \r 导致 LIKE 连续匹配失败）
+        query = _re.sub(r"[\x00-\x1f\u200b-\u200f]+", " ", query or "").strip()
         time_from = _parse_time_hint(time_hint) if time_hint else None
 
         # 查询词提取：整串 + 高频滑窗（中文 LIKE 需要短语粒度）
@@ -267,6 +270,24 @@ class ContinuumServer:
 
         results: list[RecallItem] = []
         seen: set = set()
+
+        # ⓪ 整串原文寻回（"找回原话"主通道，2026-10-06 实测事故修复）：
+        #    完整片段/短词必须能连续匹配原文——分词拆碎会让"找回某句话"失败
+        #    （实测：12 字片段被拆碎 → 55%；2 字中文被 len<3 门禁跳过 → 30%）。
+        #    search_content 内部两级：FTS（快）→ LIKE 兜底（覆盖符号短语/短串）。
+        if query.strip():
+            for h in self.be.search_content(query, limit=limit, host_agent=host_scope):
+                key = ("m", h["id"])
+                if key in seen:
+                    continue
+                seen.add(key)
+                statement = h.get("snip") or h["content"][:200]
+                results.append(RecallItem(
+                    memory_id=-h["id"], statement=statement, kind="verbatim",
+                    evidence_level="cited", stated_by="user",
+                    source_message_id=h["id"], ts=h["ts"], score=0.9,
+                ))
+
         if terms:
             for r in self.be.search_memories(terms, time_from=time_from, limit=limit,
                                              host_agent=host_scope):
@@ -280,8 +301,8 @@ class ContinuumServer:
                     score=1.0 if r["stated_by"] == "user" else 0.6,
                 ))
             for term in terms:
-                if len(term) < 3:                  # FTS trigram 需 ≥3 字符
-                    continue
+                # 短 term（1-2 字中文）不再跳过：FTS 覆盖不到，交由 search_content
+                # 的 LIKE 兜底（2026-10-06 实测：'幂等/喂食' 等短词原文层不可达）
                 for h in self.be.search_content(term, limit=limit, host_agent=host_scope):
                     key = ("m", h["id"])
                     if key in seen:

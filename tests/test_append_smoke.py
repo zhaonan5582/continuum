@@ -96,11 +96,15 @@ class TestAppendSmoke(unittest.TestCase):
         ])
         self.assertEqual((len(ids), skipped), (1, 1))
 
-    def test_short_query_returns_empty_not_error(self):
-        """trigram 语义：≥3 字符才有意义；短查询显式空结果（P1 结构化主力接管）。"""
+    def test_short_query_uses_like_fallback(self):
+        """短查询契约变更（2026-10-06 楠哥定 99% 召回目标）：旧契约「trigram ≥3 字符、
+        短查询显式空结果」已推翻——原文层必须覆盖短查询，否则"对话全量入库 → 任何内容
+        可寻回"不成立（实测 2 字中文召回仅 30%）。新契约：LIKE 兜底命中；无关短串不误报。"""
         self.be.append_messages(self.sid, [_msg("2026-10-05T10:00:00.000Z", "user", "收敛扇驱逐公式")])
-        self.assertEqual(self.be.search_content("收"), [])
-        self.assertEqual(self.be.search_content("收敛"), [])
+        hits = self.be.search_content("收")
+        self.assertEqual(len(hits), 1)
+        self.assertIn("收敛扇", hits[0]["content"])
+        self.assertEqual(self.be.search_content("缠"), [])   # 无关短串：不误报
 
 
 if __name__ == "__main__":
