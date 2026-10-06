@@ -365,24 +365,68 @@ class SQLiteBackend(StorageBackend):
     # ---- persona（版本化状态块，P3）----
 
     def persona_current(self) -> dict | None:
-        """最新人格状态块（无版本时返回 None——assemble 用占位文本）。"""
+        """当前激活人格（active=1 的最新版本；无激活时返回 None）。"""
         r = self.conn.execute(
-            "SELECT id, version, snapshot_md, created_at, change_reason"
-            " FROM persona_versions ORDER BY version DESC LIMIT 1"
+            "SELECT id, version, snapshot_md, created_at, change_reason, name"
+            " FROM persona_versions WHERE active=1 ORDER BY version DESC LIMIT 1"
         ).fetchone()
         return dict(r) if r else None
 
-    def persona_create(self, snapshot_md: str, change_reason: str,
-                       parent_version: int | None = None) -> int:
-        row = self.conn.execute("SELECT COALESCE(MAX(version),0)+1 AS v FROM persona_versions").fetchone()
-        ver = int(row["v"])
+    def persona_list_named(self) -> list[dict]:
+        """所有命名人格套：各套最新版本 + 激活状态（壳切换下拉数据源）。"""
+        rows = self.conn.execute(
+            "SELECT name, MAX(version) AS version, MAX(active) AS active,"
+            " (SELECT change_reason FROM persona_versions p2"
+            "   WHERE p2.name = p.name ORDER BY version DESC LIMIT 1) AS change_reason,"
+            " (SELECT snapshot_md FROM persona_versions p2"
+            "   WHERE p2.name = p.name ORDER BY version DESC LIMIT 1) AS snapshot_md"
+            " FROM persona_versions p GROUP BY name ORDER BY name").fetchall()
+        return [dict(r) for r in rows]
+
+    def persona_activate(self, name: str) -> int:
+        """切换激活人格（全局唯一激活：先清零再点亮）。"""
         cur = self.conn.execute(
-            "INSERT INTO persona_versions(version, snapshot_md, parent_version, change_reason, created_at)"
-            " VALUES(?,?,?,?,?)",
-            (ver, snapshot_md, parent_version, change_reason, now_iso()),
+            "SELECT COALESCE(MAX(version),0) AS v FROM persona_versions WHERE name=?",
+            (name,)).fetchone()
+        if cur["v"] == 0:
+            raise ValueError(f"人格套不存在: {name!r}")
+        self.conn.execute("UPDATE persona_versions SET active=0 WHERE active=1")
+        c2 = self.conn.execute(
+            "UPDATE persona_versions SET active=1 WHERE name=? AND version=?",
+            (name, cur["v"]))
+        return c2.rowcount
+
+    def persona_create(self, snapshot_md: str, change_reason: str,
+                       parent_version: int | None = None,
+                       name: str = "default") -> int:
+        """新建版本。同名=该套新版本（激活状态继承）；新 name=新人格套并自动激活
+        （创建即切换——用户新建一套的目的就是用它）。"""
+        row = self.conn.execute(
+            "SELECT COALESCE(MAX(version),0)+1 AS v FROM persona_versions").fetchone()
+        ver = int(row["v"])
+        exists = self.conn.execute(
+            "SELECT 1 FROM persona_versions WHERE name=? LIMIT 1", (name,)).fetchone()
+        if not exists:
+            # 新套：清其他激活，本套自动激活（创建即切换——用户新建一套的目的就是用它）
+            self.conn.execute("UPDATE persona_versions SET active=0 WHERE active=1")
+            active = 1
+        else:
+            # 同套新版本：激活态随版本迁移（该套激活 → 新版本激活，旧版本停用）
+            prev = self.conn.execute(
+                "SELECT active FROM persona_versions WHERE name=?"
+                " ORDER BY version DESC LIMIT 1", (name,)).fetchone()
+            active = prev["active"] if prev else 0
+            if active:
+                self.conn.execute(
+                    "UPDATE persona_versions SET active=0 WHERE name=? AND active=1", (name,))
+        cur = self.conn.execute(
+            "INSERT INTO persona_versions(version, snapshot_md, parent_version,"
+            " change_reason, created_at, name, active) VALUES(?,?,?,?,?,?,?)",
+            (ver, snapshot_md, parent_version, change_reason, now_iso(), name, active),
         )
         ver_id = int(cur.lastrowid)
-        self.audit("core", "persona.create", f"persona/v{ver}", {"reason": change_reason})
+        self.audit("core", "persona.create", f"persona/v{ver}",
+                   {"reason": change_reason, "name": name, "activated": bool(active)})
         return ver_id
 
     def persona_add_sample(self, persona_version: int, user_utterance: str,

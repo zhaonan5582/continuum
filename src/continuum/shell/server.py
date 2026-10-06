@@ -69,6 +69,16 @@ class ShellHandler(BaseHTTPRequestHandler):
                     self._json(self.api_persona_get())
                 elif path == "/api/redlines":
                     self._json(self.api_redlines())
+                elif path == "/api/license":
+                    self._json(self.api_license_get())
+                elif path.startswith("/api/session/"):
+                    # /api/session/{sid}/messages → split: ['', 'api', 'session', sid, 'messages']
+                    sid = int(path.split("/")[3])
+                    from urllib.parse import urlparse, parse_qs
+                    qs = parse_qs(urlparse(self.path).query)
+                    self._json(self.api_session_messages(
+                        sid, int(qs.get("offset", ["0"])[0]),
+                        int(qs.get("limit", ["50"])[0]), qs.get("q", [""])[0]))
                 elif path == "/api/recall":
                     from urllib.parse import urlparse, parse_qs
                     qs = parse_qs(urlparse(self.path).query)
@@ -88,6 +98,8 @@ class ShellHandler(BaseHTTPRequestHandler):
                     self._json(self.api_persona_version(body))
                 elif path == "/api/persona/sample":
                     self._json(self.api_persona_sample(body))
+                elif path == "/api/persona/activate":
+                    self._json(self.api_persona_activate(body))
                 elif path == "/api/redlines":
                     self._json(self.api_redline_add(body))
                 elif path == "/api/redlines/toggle":
@@ -103,6 +115,8 @@ class ShellHandler(BaseHTTPRequestHandler):
                     self._json(self.api_extract(body))
                 elif path == "/api/doctor":
                     self._json(self.api_doctor())
+                elif path == "/api/license":
+                    self._json(self.api_license_activate(body))
                 else:
                     self._json({"error": f"未知路径 {path}"}, code=404)
         except Exception as e:  # noqa: BLE001
@@ -138,17 +152,44 @@ class ShellHandler(BaseHTTPRequestHandler):
         be = self.srv.be
         cur = be.persona_current()
         samples = be.persona_samples_for(cur["version"]) if cur else []
+        cur_name = cur["name"] if cur else None
         versions = [dict(r) for r in be.conn.execute(
-            "SELECT version, change_reason, created_at FROM persona_versions"
-            " ORDER BY version DESC LIMIT 20").fetchall()]
-        return {"current": cur, "samples": samples, "versions": versions}
+            "SELECT version, change_reason, created_at, active FROM persona_versions"
+            " WHERE name=? ORDER BY version DESC LIMIT 20",
+            (cur_name or "__none__",)).fetchall()] if cur else []
+        return {"current": cur, "samples": samples, "versions": versions,
+                "named": be.persona_list_named()}
+
+    def api_persona_activate(self, body: dict) -> dict:
+        name = (body.get("name") or "").strip()
+        if not name:
+            return {"error": "name 不能为空"}
+        n = self.srv.be.persona_activate(name)
+        return {"name": name, "switched": n}
 
     def api_persona_version(self, body: dict) -> dict:
         text = (body.get("text") or "").strip()
         if not text:
             return {"error": "text 不能为空"}
-        vid = self.srv.be.persona_create(text, change_reason=body.get("reason") or "壳端录入")
-        return {"version": vid}
+        name = (body.get("name") or "default").strip() or "default"
+        vid = self.srv.be.persona_create(text, change_reason=body.get("reason") or "壳端录入",
+                                         name=name)
+        return {"version": vid, "name": name}
+
+    def api_session_messages(self, session_id: int, offset: int = 0,
+                             limit: int = 50, q: str = "") -> dict:
+        """会话浏览器：完整消息内容，分页 + 关键词过滤。"""
+        limit = max(1, min(limit, 200))
+        total = self.srv.be.conn.execute(
+            "SELECT COUNT(*) c FROM messages WHERE session_id=?", (session_id,)
+        ).fetchone()["c"]
+        rows = self.srv.be.conn.execute(
+            "SELECT id, ts, role, content FROM messages WHERE session_id=?"
+            " AND content LIKE ? ORDER BY seq LIMIT ? OFFSET ?",
+            (session_id, f"%{q}%" if q else "%", limit, offset)).fetchall()
+        return {"total": total, "offset": offset, "limit": limit,
+                "messages": [{"id": r["id"], "ts": r["ts"], "role": r["role"],
+                              "content": r["content"]} for r in rows]}
 
     def api_persona_sample(self, body: dict) -> dict:
         cur = self.srv.be.persona_current()
@@ -220,6 +261,40 @@ class ShellHandler(BaseHTTPRequestHandler):
         with redirect_stdout(buf):
             code = run_doctor()
         return {"output": buf.getvalue(), "code": code}
+
+    # ---- 授权（骨架：本地格式校验 + 存储；在线激活/签名校验随商业化接入） ----
+
+    _LICENSE_PATH = Path.home() / ".continuum" / "license.json"
+
+    def _license_state(self) -> dict:
+        try:
+            return json.loads(self._LICENSE_PATH.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return {"activated": False}
+
+    def api_license_get(self) -> dict:
+        st = self._license_state()
+        key = st.get("key") or ""
+        masked = "-".join(key[i:i + 4] for i in range(0, len(key), 4)) if key else ""
+        return {"activated": bool(st.get("activated")),
+                "key_masked": masked, "plan": st.get("plan"),
+                "activated_at": st.get("activated_at")}
+
+    def api_license_activate(self, body: dict) -> dict:
+        key = (body.get("key") or "").strip().upper().replace(" ", "")
+        digits = key.replace("-", "")
+        # 骨架校验：格式 4×4 + 末位为前 15 位校验和（真签名校验随商业化接入，诚实标注）
+        import re as _re
+        if not _re.fullmatch(r"[A-Z0-9]{4}(-[A-Z0-9]{4}){3}", key):
+            return {"error": "注册码格式应为 XXXX-XXXX-XXXX-XXXX"}
+        if sum(ord(c) for c in digits[:15]) % 36 != int(digits[15], 36):
+            return {"error": "注册码校验失败（校验位不符）"}
+        from datetime import datetime, timezone
+        st = {"activated": True, "key": key, "plan": body.get("plan") or "pro",
+              "activated_at": datetime.now(timezone.utc).isoformat()}
+        self._LICENSE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        self._LICENSE_PATH.write_text(json.dumps(st, ensure_ascii=False), encoding="utf-8")
+        return {"activated": True, "plan": st["plan"]}
 
 
 def make_server(srv: ContinuumServer, db_path: str, host: str = "127.0.0.1",

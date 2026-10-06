@@ -101,6 +101,65 @@ class TestShellAPI(unittest.TestCase):
         d = self._post("/api/recall", {"q": "参照站"})
         self.assertGreaterEqual(len(d["items"]), 1)
 
+    def test_persona_named_and_activate(self):
+        """多套命名人格：新建套自动激活；activate 全局唯一切换；装配读激活套。"""
+        self._post("/api/persona/version",
+                   {"text": "你是老王。", "reason": "初版", "name": "老王"})
+        self._post("/api/persona/sample",
+                   {"user": "状态？", "agent": "全绿。", "name_ignored": 1})
+        pkg = self.srv.memory_assemble(None)
+        self.assertIn("老王", pkg.persona_md)
+        self._post("/api/persona/version",
+                   {"text": "你是小陈：先列计划。", "reason": "切换", "name": "小陈"})
+        pkg = self.srv.memory_assemble(None)
+        self.assertIn("小陈", pkg.persona_md)          # 新套自动激活
+        d = self._get("/api/persona")
+        names = {n["name"] for n in d["named"]}
+        self.assertEqual(names, {"老王", "小陈"})
+        self.assertEqual(d["current"]["name"], "小陈")
+        # 切回老王
+        self._post("/api/persona/activate", {"name": "老王"})
+        pkg = self.srv.memory_assemble(None)
+        self.assertIn("老王", pkg.persona_md)
+        self.assertNotIn("小陈", pkg.persona_md)
+        # 样本随套走
+        d = self._get("/api/persona")
+        self.assertEqual(d["current"]["name"], "老王")
+
+    def test_session_browser_pagination(self):
+        """会话浏览器：分页 + 内容返回。"""
+        self.srv.be.conn.execute(
+            "INSERT INTO sessions(host_agent, external_id, project_id, started_at)"
+            " VALUES('workbuddy','br','p','2026-01-01T00:00:00.000Z')")
+        sid = self.be.conn.execute("SELECT id FROM sessions").fetchone()["id"]
+        from continuum.udf import UDFMessage, UDFMeta
+        msgs = [UDFMessage(ts=f"2026-01-01T00:00:{i:02d}.000Z", role="user",
+                           host="workbuddy", session_id="br", content=f"消息{i}",
+                           meta=UDFMeta()) for i in range(1, 8)]
+        self.srv.be.append_messages(sid, msgs)
+        d = self._get("/api/session/%d/messages?offset=0&limit=3" % sid)
+        self.assertEqual(d["total"], 7)
+        self.assertEqual(len(d["messages"]), 3)
+        d2 = self._get("/api/session/%d/messages?offset=6&limit=3" % sid)
+        self.assertEqual(len(d2["messages"]), 1)
+
+    def test_license_skeleton(self):
+        """授权骨架：坏格式拒绝；合法校验和激活并持久化。"""
+        bad = self._post("/api/license", {"key": "BAD"})
+        self.assertIn("error", bad)
+        # 构造校验和合法的 key：前 15 位任意 A-Z0-9，末位=前 15 位 ord 和 % 36
+        import string
+        prefix = "AAAA-BBBB-CCCC-DD"
+        digits = prefix.replace("-", "") + "E"   # 16 位占位
+        chk = sum(ord(c) for c in digits[:15]) % 36
+        last = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"[chk]
+        key = "-".join([digits[0:4], digits[4:8], digits[8:12], digits[12:15] + last])
+        d = self._post("/api/license", {"key": key})
+        self.assertTrue(d.get("activated"))
+        st = self._get("/api/license")
+        self.assertTrue(st["activated"])
+        self.assertNotIn(key, st["key_masked"])   # 脱敏显示
+
     def test_toggle_redline(self):
         d = self._post("/api/redlines",
                        {"pattern": "legacy", "statement": "旧红线", "action": "block"})

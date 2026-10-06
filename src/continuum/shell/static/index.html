@@ -15,93 +15,83 @@
   * { box-sizing: border-box; margin: 0; }
   ::-webkit-scrollbar { width: 10px; height: 10px; }
   ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 6px; border: 2px solid var(--bg); }
-  ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
   body { background: linear-gradient(180deg, #eef2f7 0%, #f5f7fa 320px);
          color: var(--text); font: 14px/1.65 "Segoe UI", "Microsoft YaHei", sans-serif;
          -webkit-font-smoothing: antialiased; }
-
-  /* ---- 顶栏：品牌深色 ---- */
-  header { position: sticky; top: 0; z-index: 10; color: #fff; padding: 14px 28px;
-           display: flex; align-items: center; gap: 16px;
+  header { position: sticky; top: 0; z-index: 10; color: #fff; padding: 13px 28px;
+           display: flex; align-items: center; gap: 14px;
            background: linear-gradient(90deg, #0f172a 0%, #1e293b 55%, #1d3a8a 100%);
            box-shadow: 0 2px 14px rgba(15,23,42,.25); }
-  .logo { width: 38px; height: 38px; border-radius: 11px; display: flex; align-items: center;
-          justify-content: center; font-size: 20px;
+  .logo { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center;
+          justify-content: center; font-size: 19px;
           background: linear-gradient(135deg, #3b82f6, #8b5cf6);
           box-shadow: 0 4px 14px rgba(59,130,246,.45); }
-  .brand-txt b { font-size: 18px; letter-spacing: .3px; }
-  .brand-txt .sub { color: #94a3b8; font-size: 12px; }
+  .brand-txt b { font-size: 17px; letter-spacing: .3px; }
+  .brand-txt .sub { color: #94a3b8; font-size: 11px; }
   .run-badge { display: flex; align-items: center; gap: 7px; font-size: 12px; color: #86efac;
                background: rgba(22,163,74,.15); border: 1px solid rgba(22,163,74,.35);
                padding: 4px 12px; border-radius: 999px; }
   .run-badge i { width: 8px; height: 8px; border-radius: 50%; background: #22c55e;
                  box-shadow: 0 0 8px #22c55e; animation: pulse 2s infinite; }
   @keyframes pulse { 50% { opacity: .45; } }
-  nav { margin-left: auto; display: flex; gap: 4px; }
-  nav a { text-decoration: none; padding: 7px 15px; border-radius: 9px; font-size: 13px;
+  nav { margin-left: auto; display: flex; gap: 4px; align-items: center; }
+  nav a { text-decoration: none; padding: 6px 13px; border-radius: 9px; font-size: 13px;
           color: #cbd5e1; transition: .15s; }
   nav a:hover { color: #fff; background: rgba(255,255,255,.09); }
-
-  /* ---- 布局 ---- */
-  main { max-width: 1400px; margin: 24px auto; padding: 0 24px;
+  .lang-btn { border: 1px solid rgba(255,255,255,.25); background: transparent; color: #cbd5e1;
+              border-radius: 8px; padding: 5px 12px; cursor: pointer; font-size: 12px; }
+  .lang-btn:hover { color: #fff; border-color: #fff; }
+  main { max-width: 1400px; margin: 22px auto; padding: 0 24px;
          display: grid; grid-template-columns: 6fr 5fr; gap: 20px; align-items: start; }
   #msg { grid-column: 1 / -1; }
   .col { display: flex; flex-direction: column; min-width: 0; }
   section { scroll-margin-top: 78px; }
-
-  /* ---- 卡片 ---- */
   .card { background: var(--card); border: 1px solid rgba(226,232,240,.8);
           border-radius: var(--radius); box-shadow: var(--shadow);
-          padding: 20px 22px; margin-bottom: 20px; transition: box-shadow .18s; }
+          padding: 18px 20px; margin-bottom: 18px; transition: box-shadow .18s; }
   .card:hover { box-shadow: var(--shadow-hover); }
-  .card h2 { font-size: 14px; font-weight: 600; margin-bottom: 14px; letter-spacing: .2px;
+  .card h2 { font-size: 14px; font-weight: 600; margin-bottom: 13px; letter-spacing: .2px;
              display: flex; align-items: center; gap: 8px; }
   .card h2 .ic { width: 26px; height: 26px; border-radius: 8px; display: inline-flex;
                  align-items: center; justify-content: center; font-size: 14px;
                  background: var(--brand-weak); }
-
-  /* ---- 统计卡 ---- */
-  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px,1fr)); gap: 10px; }
-  .stat { border-radius: 12px; padding: 14px 14px 12px; background: var(--card);
-          border: 1px solid var(--line); transition: .15s; }
+  /* 统计小方块：小号 + 居中 */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px,1fr)); gap: 8px; }
+  .stat { border-radius: 11px; padding: 10px 6px 8px; background: var(--card);
+          border: 1px solid var(--line); text-align: center; transition: .15s; }
   .stat:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
-  .stat .ic { width: 30px; height: 30px; border-radius: 9px; display: flex;
-              align-items: center; justify-content: center; font-size: 15px; margin-bottom: 8px; }
-  .stat b { display: block; font-size: 24px; font-variant-numeric: tabular-nums; letter-spacing: -.5px; }
-  .stat span { color: var(--muted); font-size: 12px; }
+  .stat .ic { width: 26px; height: 26px; border-radius: 8px; display: inline-flex;
+              align-items: center; justify-content: center; font-size: 13px; margin-bottom: 5px; }
+  .stat b { display: block; font-size: 18px; font-variant-numeric: tabular-nums; }
+  .stat span { color: var(--muted); font-size: 11px; }
   .ic.c-blue  { background: #dbeafe; } .ic.c-green{ background: #dcfce7; }
   .ic.c-purple{ background: #ede9fe; } .ic.c-orange{ background: #ffedd5; }
   .ic.c-red   { background: #fee2e2; } .ic.c-cyan  { background: #cffafe; }
-
-  /* ---- 表格 ---- */
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th { text-align: left; padding: 8px 10px; color: var(--muted); font-weight: 500;
+  table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+  th { text-align: left; padding: 8px 9px; color: var(--muted); font-weight: 500;
        font-size: 12px; background: var(--bg); }
   th:first-child { border-radius: 8px 0 0 8px; } th:last-child { border-radius: 0 8px 8px 0; }
-  td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; }
+  td { padding: 8px 9px; border-bottom: 1px solid #f1f5f9; overflow-wrap: break-word; }
   tbody tr { transition: background .12s; }
   tbody tr:hover { background: #f8fafc; }
-  code { font-family: Consolas, monospace; font-size: 12px; background: var(--bg);
-         padding: 2px 6px; border-radius: 6px; color: #475569; word-break: break-all; }
-
-  /* ---- 表单 ---- */
+  code { font-family: Consolas, monospace; font-size: 11px; background: var(--bg);
+         padding: 2px 5px; border-radius: 6px; color: #475569; word-break: break-all; }
   input[type=text], textarea, select, input[type=number] {
     width: 100%; border: 1px solid var(--line); border-radius: 9px;
     padding: 9px 12px; font: inherit; background: #fff; transition: .15s; }
   input:focus, textarea:focus, select:focus {
     outline: none; border-color: var(--brand);
     box-shadow: 0 0 0 3px rgba(37,99,235,.13); }
-  textarea { min-height: 88px; resize: vertical; }
+  textarea { min-height: 84px; resize: vertical; }
   button.pri { background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff;
                border: none; border-radius: 9px; padding: 9px 20px; cursor: pointer;
                font-size: 14px; font-weight: 500;
                box-shadow: 0 2px 8px rgba(37,99,235,.35); transition: .15s; }
-  button.pri:hover { filter: brightness(1.1); box-shadow: 0 4px 14px rgba(37,99,235,.45); }
+  button.pri:hover { filter: brightness(1.1); }
   button.pri:active { transform: translateY(1px); }
   button.mini { border: 1px solid var(--line); background: #fff; border-radius: 8px;
                 padding: 4px 12px; cursor: pointer; font-size: 12px; transition: .12s; }
   button.mini:hover { border-color: var(--brand); color: var(--brand); }
-
   .row { display: flex; gap: 10px; align-items: flex-start; }
   .row > * { flex: 1; }
   .muted { color: var(--muted); font-size: 12px; }
@@ -118,9 +108,17 @@
          display: none; box-shadow: var(--shadow); }
   .msg.ok { background: #f0fdf4; color: var(--ok); border: 1px solid #bbf7d0; display: block; }
   .msg.bad { background: #fef2f2; color: var(--bad); border: 1px solid #fecaca; display: block; }
-  .empty { text-align: center; padding: 26px 10px; color: var(--muted); }
-  .empty .big { font-size: 30px; margin-bottom: 6px; }
-
+  .empty { text-align: center; padding: 22px 10px; color: var(--muted); }
+  .empty .big { font-size: 28px; margin-bottom: 6px; }
+  details.fold summary { cursor: pointer; color: var(--muted); font-size: 12px; }
+  /* 会话浏览器消息气泡 */
+  .bubble { border-radius: 12px; padding: 9px 13px; margin-bottom: 8px; max-width: 92%;
+            font-size: 13px; border: 1px solid var(--line); }
+  .bubble.user { background: var(--brand-weak); margin-left: auto; border-color: #bfdbfe; }
+  .bubble.agent { background: var(--card); }
+  .bubble .who { font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+  .pager { display: flex; gap: 8px; align-items: center; justify-content: center; margin-top: 10px; }
+  .pager button { padding: 3px 10px; }
   @media (max-width: 1080px) { main { grid-template-columns: 1fr; } }
 </style>
 </head>
@@ -129,13 +127,10 @@
   <div class="logo">🧠</div>
   <div class="brand-txt"><b>Continuum</b>
     <div class="sub">跨 agent 持久记忆与连续人格层 · <span id="dbpath"></span></div></div>
-  <span class="run-badge"><i></i>服务运行中</span>
+  <span class="run-badge"><i></i><span data-i18n="running">服务运行中</span></span>
   <nav>
-    <a href="#v-overview">总览</a>
-    <a href="#v-persona">人格</a>
-    <a href="#v-redlines">红线</a>
-    <a href="#v-recall">检索</a>
-    <a href="#v-doctor">体检</a>
+    <a href="#v-license" style="display:flex;align-items:center;gap:6px">🔑 <span data-i18n="nav_license">授权</span></a>
+    <button class="lang-btn" onclick="toggleLang()">EN</button>
   </nav>
 </header>
 <main>
@@ -144,17 +139,33 @@
   <div class="col">
   <!-- 总览 -->
   <section id="v-overview">
-    <div class="card"><h2><span class="ic">📊</span>库内统计</h2>
+    <div class="card"><h2><span class="ic">📊</span><span data-i18n="h_stats">库内统计</span></h2>
       <div class="stats" id="stats"></div>
       <p class="muted" style="margin-top:12px" id="ov-hint"></p></div>
-    <div class="card"><h2><span class="ic">💬</span>会话 <span class="muted">（各自独立，消息不混合）</span></h2>
-      <table id="sess"><thead><tr><th>#</th><th>会话</th><th>项目</th><th>消息数</th><th>标题</th></tr></thead><tbody></tbody></table>
+    <div class="card"><h2><span class="ic">💬</span><span data-i18n="h_sessions">会话</span>
+      <span class="muted" data-i18n="h_sessions_sub">（各自独立，消息不混合——点「查看」浏览完整内容）</span></h2>
+      <table id="sess"><thead><tr>
+        <th style="width:26px">#</th><th data-i18n="t_session">会话</th>
+        <th data-i18n="t_project">项目</th><th data-i18n="t_msgcount">消息数</th>
+        <th data-i18n="t_actions">操作</th></tr></thead><tbody></tbody></table>
+      <div id="sess-view" class="hide" style="margin-top:12px">
+        <div class="row">
+          <input type="text" id="sv-q" placeholder="" onkeydown="if(event.key==='Enter')loadSessionMsgs(0)">
+          <button class="pri" style="flex:0 0 auto" onclick="loadSessionMsgs(0)"><span data-i18n="b_search">搜索</span></button>
+          <button class="mini" style="flex:0 0 auto" onclick="closeSessionView()"><span data-i18n="b_close">收起</span></button>
+        </div>
+        <div id="sv-list" style="margin-top:10px;max-height:420px;overflow:auto"></div>
+        <div class="pager"><button class="mini" onclick="loadSessionMsgs(svOffset-50)">←</button>
+          <span class="muted" id="sv-page"></span>
+          <button class="mini" onclick="loadSessionMsgs(svOffset+50)">→</button></div>
+      </div>
     </div>
-    <div class="card"><h2><span class="ic">⚙️</span>沉淀 <span class="muted">（跨会话扫描 → 结构化记忆）</span></h2>
+    <div class="card"><h2><span class="ic">⚙️</span><span data-i18n="h_extract">沉淀</span>
+      <span class="muted" data-i18n="h_extract_sub">（跨会话扫描 → 结构化记忆）</span></h2>
       <div class="row">
         <label style="flex:0 0 auto;display:flex;align-items:center;gap:6px;cursor:pointer">
-          <input type="checkbox" id="ex-confirm" checked> 直接置为 active（勾选=人工确认）</label>
-        <button class="pri" style="flex:0 0 auto" onclick="doExtract()">立即沉淀</button>
+          <input type="checkbox" id="ex-confirm" checked> <span data-i18n="l_confirm">直接置为生效（勾选=人工确认）</span></label>
+        <button class="pri" style="flex:0 0 auto" onclick="doExtract()"><span data-i18n="b_extract_now">立即沉淀</span></button>
       </div>
       <pre id="ex-out" class="hide"></pre>
     </div>
@@ -162,64 +173,137 @@
 
   <!-- 红线 -->
   <section id="v-redlines">
-    <div class="card"><h2><span class="ic">🛡️</span>红线列表</h2>
-      <table id="rl-tab"><thead><tr><th>#</th><th>状态</th><th>动作</th><th>范围</th><th>陈述</th><th>pattern</th><th>用例</th><th></th></tr></thead><tbody></tbody></table>
-      <div style="margin-top:12px"><button class="mini" onclick="runGuardTest()">▶ 执行正反测试集（防误伤回归）</button></div>
+    <div class="card"><h2><span class="ic">🛡️</span><span data-i18n="h_redlist">红线列表</span></h2>
+      <table id="rl-tab"><thead><tr>
+        <th style="width:26px">#</th><th data-i18n="t_status">状态</th>
+        <th data-i18n="t_action">动作</th><th data-i18n="t_statement" style="width:38%">陈述</th>
+        <th>pattern</th><th data-i18n="t_cases">用例</th><th style="width:56px"></th></tr></thead><tbody></tbody></table>
+      <div style="margin-top:12px"><button class="mini" onclick="runGuardTest()">▶ <span data-i18n="b_guardtest">执行正反测试集（防误伤回归）</span></button></div>
       <pre id="gt-out" class="hide"></pre></div>
-    <div class="card"><h2><span class="ic">➕</span>录入红线</h2>
-      <div class="row"><input type="text" id="rl-pattern" placeholder="pattern（正则优先，写动作短语如：删除.*参照站；非法正则回退子串）">
-        <select id="rl-action" style="flex:0 0 110px"><option>block</option><option>warn</option><option>ask</option></select></div>
-      <div class="row" style="margin-top:8px"><input type="text" id="rl-stmt" placeholder="红线陈述（逐字存储，禁止改写）">
-        <input type="text" id="rl-scope" placeholder="scope（global）" style="flex:0 0 160px">
-        <button class="pri" style="flex:0 0 auto" onclick="addRedline()">录入</button></div></div>
-    <div class="card"><h2><span class="ic">🧪</span>补正反用例（防误伤）</h2>
-      <div class="row"><input type="number" id="rt-id" placeholder="红线 #id" style="flex:0 0 120px">
-        <select id="rt-case" style="flex:0 0 150px"><option value="positive">positive（该拦）</option><option value="negative">negative（不该拦）</option></select>
-        <input type="text" id="rt-sample" placeholder="样例 target"></div>
-      <div class="row" style="margin-top:8px"><span class="muted" style="flex:1">期望动作缺省：positive→block，negative→allow</span>
-        <button class="pri" style="flex:0 0 auto" onclick="addRt()">录入用例</button></div></div>
+    <div class="card"><h2><span class="ic">➕</span><span data-i18n="h_redadd">录入红线</span></h2>
+      <div class="row"><input type="text" id="rl-pattern" data-i18n-ph="ph_pattern">
+        <select id="rl-action" style="flex:0 0 120px"><option value="block">拦截</option><option value="warn">警告</option><option value="ask">询问</option></select></div>
+      <div class="row" style="margin-top:8px"><input type="text" id="rl-stmt" data-i18n-ph="ph_stmt">
+        <input type="text" id="rl-scope" data-i18n-ph="ph_scope" style="flex:0 0 150px">
+        <button class="pri" style="flex:0 0 auto" onclick="addRedline()"><span data-i18n="b_add">录入</span></button></div>
+      <p class="muted" style="margin-top:8px" data-i18n="hint_pattern"></p></div>
+    <div class="card"><h2><span class="ic">🧪</span><span data-i18n="h_redcases">补正反用例（防误伤）</span></h2>
+      <div class="row"><input type="number" id="rt-id" data-i18n-ph="ph_rl_id" style="flex:0 0 110px">
+        <select id="rt-case" style="flex:0 0 150px"><option value="positive" data-i18n="o_positive">正用例（该拦）</option><option value="negative" data-i18n="o_negative">反用例（不该拦）</option></select>
+        <input type="text" id="rt-sample" data-i18n-ph="ph_sample"></div>
+      <div class="row" style="margin-top:8px"><span class="muted" style="flex:1" data-i18n="hint_expected"></span>
+        <button class="pri" style="flex:0 0 auto" onclick="addRt()"><span data-i18n="b_addcase">录入用例</span></button></div></div>
   </section>
   </div>
 
   <div class="col">
   <!-- 人格 -->
   <section id="v-persona">
-    <div class="card"><h2><span class="ic">🧠</span>当前人格</h2><div id="persona-cur" class="muted">加载中…</div></div>
-    <div class="card"><h2><span class="ic">✨</span>新建人格版本 <span class="muted">（覆盖式定版，历史可回溯）</span></h2>
-      <textarea id="persona-text" placeholder="人格状态块：身份、语气、协作默契、硬规矩……"></textarea>
-      <div class="row" style="margin-top:10px">
-        <input type="text" id="persona-reason" placeholder="修改原因（必填，进版本审计）">
-        <button class="pri" style="flex:0 0 auto" onclick="savePersona()">定版</button>
-      </div></div>
-    <div class="card"><h2><span class="ic">🗨️</span>追加 few-shot 样本 <span class="muted">（挂到当前版本）</span></h2>
-      <div class="row"><input type="text" id="ps-user" placeholder="用户说…"></div>
-      <div class="row" style="margin-top:8px"><input type="text" id="ps-agent" placeholder="期望助手答…"></div>
+    <div class="card"><h2><span class="ic">🧠</span><span data-i18n="h_persona">人格</span></h2>
+      <div class="row" style="margin-bottom:10px">
+        <select id="persona-select" onchange="activatePersona(this.value)"></select>
+        <span class="tag on" id="persona-active-tag" style="flex:0 0 auto"></span>
+      </div>
+      <div id="persona-cur" class="muted"></div>
+      <details fold class="fold" style="margin-top:10px"><summary data-i18n="s_history">版本历史（可 diff 可回滚）</summary>
+        <table id="pv-tab" style="margin-top:8px"><thead><tr><th data-i18n="t_version">版本</th><th data-i18n="t_reason">原因</th><th data-i18n="t_time">时间</th></tr></thead><tbody></tbody></table>
+      </details></div>
+    <div class="card"><h2><span class="ic">✨</span><span data-i18n="h_persona_edit">新增 / 修改人格</span></h2>
+      <input type="text" id="persona-name" data-i18n-ph="ph_pname" style="margin-bottom:8px">
+      <textarea id="persona-text" data-i18n-ph="ph_ptext"></textarea>
       <div class="row" style="margin-top:8px">
-        <input type="text" id="ps-tag" placeholder="标签（可选）">
-        <button class="pri" style="flex:0 0 auto" onclick="addSample()">追加样本</button>
+        <input type="text" id="persona-reason" data-i18n-ph="ph_reason">
+        <button class="pri" style="flex:0 0 auto" onclick="savePersona()"><span data-i18n="b_save_version">定版</span></button>
+      </div>
+      <p class="muted" style="margin-top:6px" data-i18n="hint_persona"></p></div>
+    <div class="card"><h2><span class="ic">🗨️</span><span data-i18n="h_fewshot">对话样本（few-shot，挂当前套）</span></h2>
+      <div class="row"><input type="text" id="ps-user" data-i18n-ph="ph_user"></div>
+      <div class="row" style="margin-top:8px"><input type="text" id="ps-agent" data-i18n-ph="ph_agent"></div>
+      <div class="row" style="margin-top:8px">
+        <input type="text" id="ps-tag" data-i18n-ph="ph_tag">
+        <button class="pri" style="flex:0 0 auto" onclick="addSample()"><span data-i18n="b_addsample">追加样本</span></button>
       </div>
       <div id="ps-list" style="margin-top:12px"></div></div>
-    <div class="card"><h2><span class="ic">🕘</span>版本历史</h2>
-      <table id="pv-tab"><thead><tr><th>版本</th><th>原因</th><th>时间</th></tr></thead><tbody></tbody></table></div>
   </section>
 
   <!-- 检索 -->
   <section id="v-recall">
-    <div class="card"><h2><span class="ic">🔍</span>记忆检索 <span class="muted">（跨会话，每条带证据等级与原文指针）</span></h2>
-      <div class="row"><input type="text" id="rc-q" placeholder="关键词，如：参照站 / 设备管理 / 粗集料检测" onkeydown="if(event.key==='Enter')doRecall()">
-        <button class="pri" style="flex:0 0 auto" onclick="doRecall()">检索</button></div>
+    <div class="card"><h2><span class="ic">🔍</span><span data-i18n="h_recall">记忆检索</span>
+      <span class="muted" data-i18n="h_recall_sub">（跨会话，每条带证据等级与原文指针）</span></h2>
+      <div class="row"><input type="text" id="rc-q" data-i18n-ph="ph_search" onkeydown="if(event.key==='Enter')doRecall()">
+        <button class="pri" style="flex:0 0 auto" onclick="doRecall()"><span data-i18n="b_search">检索</span></button></div>
       <div id="rc-out" style="margin-top:12px"></div></div>
+  </section>
+
+  <!-- 授权 -->
+  <section id="v-license">
+    <div class="card"><h2><span class="ic">🔑</span><span data-i18n="h_license">授权</span></h2>
+      <div id="lic-state" class="muted"></div>
+      <div class="row" style="margin-top:10px">
+        <input type="text" id="lic-key" data-i18n-ph="ph_license">
+        <button class="pri" style="flex:0 0 auto" onclick="activateLicense()"><span data-i18n="b_activate">激活</span></button>
+      </div>
+      <p class="muted" style="margin-top:8px" data-i18n="hint_license"></p></div>
   </section>
 
   <!-- 体检 -->
   <section id="v-doctor">
-    <div class="card"><h2><span class="ic">🩺</span>一键体检 <span class="muted">（配置 / 记忆库 / server 握手 / 生效指引）</span></h2>
-      <button class="pri" onclick="runDoctor()">运行体检</button>
+    <div class="card"><h2><span class="ic">🩺</span><span data-i18n="h_doctor">一键体检</span>
+      <span class="muted" data-i18n="h_doctor_sub">（配置 / 记忆库 / 握手 / 生效指引）</span></h2>
+      <button class="pri" onclick="runDoctor()"><span data-i18n="b_rundoctor">运行体检</span></button>
       <pre id="dt-out" class="hide"></pre></div>
   </section>
   </div>
 </main>
 <script>
+/* ---- i18n ---- */
+const I18N = {
+  zh: {"running":"服务运行中","nav_overview":"总览","nav_persona":"人格","nav_redlines":"红线","nav_recall":"检索","nav_license":"授权","nav_doctor":"体检",
+    "h_stats":"库内统计","h_sessions":"会话","h_sessions_sub":"（各自独立，消息不混合——点「查看」浏览完整内容）","h_extract":"沉淀","h_extract_sub":"（跨会话扫描 → 结构化记忆）",
+    "h_redlist":"红线列表","h_redadd":"录入红线","h_redcases":"补正反用例（防误伤）","h_persona":"人格","h_persona_edit":"新增 / 修改人格","h_fewshot":"对话样本（few-shot，挂当前套）",
+    "h_recall":"记忆检索","h_recall_sub":"（跨会话，每条带证据等级与原文指针）","h_license":"授权","h_doctor":"一键体检","h_doctor_sub":"（配置 / 记忆库 / 握手 / 生效指引）",
+    "t_session":"会话","t_project":"项目","t_msgcount":"消息数","t_actions":"操作","t_status":"状态","t_action":"动作","t_statement":"陈述","t_cases":"用例",
+    "t_version":"版本","t_reason":"原因","t_time":"时间","b_search":"搜索","b_close":"收起","b_extract_now":"立即沉淀","b_add":"录入","b_addcase":"录入用例","b_save_version":"定版","b_addsample":"追加样本","b_activate":"激活","b_rundoctor":"运行体检","b_guardtest":"执行正反测试集（防误伤回归）",
+    "l_confirm":"直接置为生效（勾选=人工确认）","o_positive":"正用例（该拦）","o_negative":"反用例（不该拦）",
+    "ph_pattern":"pattern（正则优先，写动作短语如：删除.*参照站）","ph_stmt":"红线陈述（逐字存储，禁止改写）","ph_scope":"范围（全局）","ph_rl_id":"红线编号","ph_sample":"样例目标",
+    "ph_pname":"人格套名称（如：老王 / 小陈——不同名称=不同人格，可随时切换）","ph_ptext":"人格状态块：身份、语气、协作默契、硬规矩……","ph_reason":"修改原因（进版本审计）","ph_user":"用户说…","ph_agent":"期望助手答…","ph_tag":"标签（可选）","ph_search":"关键词…","ph_license":"注册码（XXXX-XXXX-XXXX-XXXX）",
+    "hint_pattern":"提示：pattern 写「动作短语」或正则，不要只写名词——只写名词会误拦只读操作（如 pattern=参照站 会拦下「查询参照站」）。",
+    "hint_expected":"期望动作缺省：正用例→拦截，反用例→放行","hint_persona":"同名=该套的新版本；新名称=新建一套人格并自动切换激活。装配包始终携带当前激活的那套。",
+    "hint_license":"注册码激活后解锁对应版本能力。校验目前为本地骨架（格式+校验位），在线激活随商业化接入。",
+    "s_history":"版本历史（可 diff 可回滚）",
+    "st_sessions":"会话","st_messages":"消息（原文层）","st_active":"生效记忆","st_pending":"待确认记忆","st_redlines":"生效红线","st_persona":"激活人格",
+    "e_unnamed":"未录入","e_none":"无","btn_view":"查看","pg_info":(o,l,t)=>`第 ${o+1}–${Math.min(o+l,t)} 条 / 共 ${t} 条`,
+    "who_user":"用户","who_agent":"助手","who_system":"系统","recall_none":"无命中——换个关键词试试","recall_meta":(ms,n,s)=>`延迟 ${ms}ms，命中 ${n} 条`,
+    "empty_persona":"尚未录入人格——在下方创建第一套。","empty_samples":"当前套还没有对话样本","empty_redlines":"暂无红线——录入后拦截引擎将据此工作","empty_recall":"无命中——换个关键词试试",
+    "lic_ok":"激活成功","lic_no":"未激活"},
+  en: {"running":"Service running","nav_overview":"Overview","nav_persona":"Persona","nav_redlines":"Redlines","nav_recall":"Search","nav_license":"License","nav_doctor":"Doctor",
+    "h_stats":"Library stats","h_sessions":"Sessions","h_sessions_sub":"(independent, never mixed — click View to browse full content)","h_extract":"Extraction","h_extract_sub":"(cross-session scan → structured memories)",
+    "h_redlist":"Redlines","h_redadd":"Add redline","h_redcases":"Positive/Negative cases (anti-false-positive)","h_persona":"Persona","h_persona_edit":"Create / Edit persona","h_fewshot":"Few-shot samples (attached to current set)",
+    "h_recall":"Memory search","h_recall_sub":"(cross-session, each with evidence level & source pointer)","h_license":"License","h_doctor":"Doctor","h_doctor_sub":"(config / db / handshake / activation guide)",
+    "t_session":"Session","t_project":"Project","t_msgcount":"Messages","t_actions":"Actions","t_status":"Status","t_action":"Action","t_statement":"Statement","t_cases":"Cases",
+    "t_version":"Version","t_reason":"Reason","t_time":"Time","b_search":"Search","b_close":"Close","b_extract_now":"Extract now","b_add":"Add","b_addcase":"Add case","b_save_version":"Save version","b_addsample":"Add sample","b_activate":"Activate","b_rundoctor":"Run doctor","b_guardtest":"Run positive/negative test suite",
+    "l_confirm":"Mark as active directly (checked = human confirmed)","o_positive":"Positive (should block)","o_negative":"Negative (should pass)",
+    "ph_pattern":"pattern (regex-first, action phrase e.g. delete.*refstation)","ph_stmt":"Redline statement (stored verbatim)","ph_scope":"Scope (global)","ph_rl_id":"Redline #","ph_sample":"Sample target",
+    "ph_pname":"Persona set name (different name = different persona, switchable)","ph_ptext":"Persona state block: identity, tone, collaboration norms, hard rules…","ph_reason":"Change reason (audited)","ph_user":"User said…","ph_agent":"Expected reply…","ph_tag":"Tag (optional)","ph_search":"Keywords…","ph_license":"License key (XXXX-XXXX-XXXX-XXXX)",
+    "hint_pattern":"Tip: write an action phrase or regex as pattern, not a bare noun — a noun pattern blocks read-only ops too (pattern=refstation blocks 'query refstation').",
+    "hint_expected":"Default expectation: positive→block, negative→allow","hint_persona":"Same name = new version of that set; new name = new persona set (auto-activated). The assembly package always carries the active one.",
+    "s_history":"Version history (diffable, rollbackable)",
+    "st_sessions":"Sessions","st_messages":"Messages (verbatim)","st_active":"Active memories","st_pending":"Pending memories","st_redlines":"Active redlines","st_persona":"Active persona",
+    "e_unnamed":"Not set","e_none":"none","btn_view":"View","pg_info":(o,l,t)=>`${o+1}–${Math.min(o+l,t)} of ${t}`,
+    "who_user":"User","who_agent":"Agent","who_system":"System","recall_none":"No match — try other keywords","recall_meta":(ms,n,s)=>`${ms}ms, ${n} hits`,
+    "empty_persona":"No persona yet — create your first set below.","empty_samples":"No few-shot samples in this set","empty_redlines":"No redlines yet","empty_recall":"No match — try other keywords",
+    "lic_ok":"Activated","lic_no":"Not activated"},
+};
+let LANG = localStorage.getItem("continuum_lang") || "zh";
+function t(key) { return (I18N[LANG][key] ?? I18N.zh[key] ?? key); }
+function applyLang() {
+  document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll("[data-i18n-ph]").forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
+  document.querySelector(".lang-btn").textContent = LANG === "zh" ? "EN" : "中文";
+  loadOverview(); loadPersona(); loadRedlines(); loadLicense();
+}
+function toggleLang() { LANG = LANG === "zh" ? "en" : "zh"; localStorage.setItem("continuum_lang", LANG); applyLang(); }
+
 const $ = s => document.querySelector(s);
 const esc = s => (s ?? "").toString().replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function msg(text, ok) { const m = $("#msg"); m.textContent = text; m.className = "msg " + (ok ? "ok" : "bad");
@@ -233,73 +317,100 @@ async function api(path, body) {
 }
 
 const STAT_META = [
-  ["sessions",         "会话",           "💬", "c-blue"],
-  ["messages",         "消息（L3 原文）", "📜", "c-cyan"],
-  ["memories_active",  "active 记忆",    "🧩", "c-purple"],
-  ["memories_pending", "pending 记忆",   "⏳", "c-orange"],
-  ["redlines",         "生效红线",        "🛡️", "c-red"],
-  ["persona_version",  "人格版本",        "🧠", "c-green"],
+  ["sessions", "st_sessions", "💬", "c-blue"],
+  ["messages", "st_messages", "📜", "c-cyan"],
+  ["memories_active", "st_active", "🧩", "c-purple"],
+  ["memories_pending", "st_pending", "⏳", "c-orange"],
+  ["redlines", "st_redlines", "🛡️", "c-red"],
 ];
 
 async function loadOverview() {
   const d = await api("/api/overview");
   $("#dbpath").textContent = d.db_path;
   const s = d.stats;
-  $("#stats").innerHTML = STAT_META.map(([key, label, icon, color]) => {
-    let v = s[key] ?? (key === "persona_version" ? "未录入" : 0);
-    return `<div class="stat"><div class="ic ${color}">${icon}</div><b>${esc(v)}</b><span>${esc(label)}</span></div>`;
-  }).join("");
+  $("#stats").innerHTML = STAT_META.map(([key, label, icon, color]) =>
+    `<div class="stat"><div class="ic ${color}">${icon}</div><b>${esc(s[key] ?? 0)}</b><span>${esc(t(label))}</span></div>`).join("")
+    + `<div class="stat"><div class="ic c-green">🧠</div><b style="font-size:14px;padding-top:5px">${esc(s.persona_version ? "v" + s.persona_version : t("e_unnamed"))}</b><span>${esc(t("st_persona"))}</span></div>`;
   $("#sess tbody").innerHTML = d.sessions.map(x =>
-    `<tr><td>${x.id}</td><td><code>${esc((x.external_id||"").slice(0,14))}…</code></td>
-     <td>${esc((x.project_id||"").slice(0,26))}</td><td><b>${x.messages}</b></td>
-     <td>${esc(x.title||"")}</td></tr>`).join("");
-  $("#ov-hint").textContent = "消息按会话独立存储、永不混合；记忆条目跨会话汇总且每条带溯源指针；人格为全局单份（版本化，右列人格块维护）。";
+    `<tr><td>${x.id}</td><td><code>${esc((x.external_id||"").slice(0,12))}…</code></td>
+     <td>${esc((x.project_id||"").slice(0,22))}</td><td>${x.messages}</td>
+     <td><button class="mini" onclick="openSession(${x.id})">${t("btn_view")}</button></td></tr>`).join("");
+  $("#ov-hint").textContent = t("hint_sessions_note") ||
+    "消息按会话独立存储、永不混合；记忆条目跨会话汇总且每条带溯源指针；人格为全局单份（版本化）";
+}
+let svSession = null, svOffset = 0;
+function openSession(id) {
+  svSession = id; svOffset = 0;
+  $("#sess-view").classList.remove("hide");
+  loadSessionMsgs(0);
+}
+function closeSessionView() { $("#sess-view").classList.add("hide"); svSession = null; }
+async function loadSessionMsgs(offset) {
+  if (!svSession) return;
+  if (offset < 0) offset = 0;
+  const q = $("#sv-q").value;
+  const d = await api(`/api/session/${svSession}/messages?offset=${offset}&limit=50&q=${encodeURIComponent(q)}`);
+  svOffset = d.offset;
+  $("#sv-list").innerHTML = d.messages.map(m =>
+    `<div class="bubble ${m.role === "user" ? "user" : "agent"}"><div class="who">${esc(t("who_" + (m.role === "user" ? "user" : m.role === "assistant" ? "agent" : "system")))} · ${esc(m.ts.slice(0,19))}</div>${esc(m.content.slice(0, 600))}</div>`).join("")
+    || `<div class="empty">${esc(t("empty_recall"))}</div>`;
+  $("#sv-page").textContent = t("pg_info")(d.offset, d.limit, d.total);
 }
 async function doExtract() {
   try {
     const d = await api("/api/extract", {confirm: $("#ex-confirm").checked});
     $("#ex-out").classList.remove("hide");
-    $("#ex-out").textContent = `沉淀完成：active ${d.active} 条，pending ${d.pending} 条，扫描 ${d.scanned} 条消息`;
-    msg("沉淀完成", true); loadOverview();
+    $("#ex-out").textContent = `${t("b_extract_now")}: active ${d.active}, pending ${d.pending}, ${d.scanned}`;
+    msg(t("b_extract_now") + " ✓", true); loadOverview();
   } catch (e) { msg(e.message, false); }
 }
 async function loadPersona() {
   const d = await api("/api/persona");
-  if (!d.current) {
-    $("#persona-cur").innerHTML = `<div class="empty"><div class="big">🧠</div>尚未录入人格<br>在下方创建第一个版本，装配包将自动携带</div>`;
-  } else {
-    $("#persona-cur").innerHTML = `<span class="tag on">v${d.current.version}</span> <pre>${esc(d.current.snapshot_md)}</pre>`;
+  const sel = $("#persona-select");
+  sel.innerHTML = d.named.map(n =>
+    `<option value="${esc(n.name)}" ${n.active ? "selected" : ""}>${esc(n.name)} (v${n.version}${n.active ? " ●" : ""})</option>`).join("")
+    || `<option value="default">default</option>`;
+  $("#persona-active-tag").textContent = d.current ? `${t("st_persona")} ✓ v${d.current.version} · ${d.current.name}` : t("lic_no");
+  if (!d.current) { $("#persona-cur").innerHTML = `<div class="empty"><div class="big">🧠</div>${t("empty_persona")}</div>`; }
+  else {
+    $("#persona-cur").innerHTML = `<pre>${esc(d.current.snapshot_md)}</pre>`;
     $("#ps-list").innerHTML = d.samples.length
-      ? "<table><thead><tr><th>用户说</th><th>期望助手</th><th>标签</th></tr></thead><tbody>" +
+      ? "<table><thead><tr><th>" + t("ph_user") + "</th><th>" + t("ph_agent") + "</th><th>" + t("ps-tag") + "</th></tr></thead><tbody>" +
         d.samples.map(s => `<tr><td>${esc(s.user_utterance)}</td><td>${esc(s.agent_response)}</td><td>${esc(s.tag||"")}</td></tr>`).join("") + "</tbody></table>"
-      : `<div class="empty"><div class="big">🗨️</div>当前版本还没有 few-shot 样本</div>`;
+      : `<div class="empty">${t("empty_samples")}</div>`;
   }
   $("#pv-tab tbody").innerHTML = d.versions.map(v =>
-    `<tr><td><b>v${v.version}</b></td><td>${esc(v.change_reason)}</td><td>${esc(v.created_at.slice(0,19))}</td></tr>`).join("")
-    || "<tr><td colspan='3' class='muted'>暂无版本</td></tr>";
+    `<tr><td><b>v${v.version}</b>${v.active ? ' <span class="tag on">ON</span>' : ""}</td><td>${esc(v.change_reason)}</td><td>${esc(v.created_at.slice(0,19))}</td></tr>`).join("")
+    || `<tr><td colspan='3' class='muted'>${t("e_none")}</td></tr>`;
+}
+async function activatePersona(name) {
+  try { await api("/api/persona/activate", {name}); msg(name + " ✓", true); loadPersona(); loadOverview(); }
+  catch (e) { msg(e.message, false); }
 }
 async function savePersona() {
   try {
-    await api("/api/persona/version", {text: $("#persona-text").value, reason: $("#persona-reason").value});
-    msg("人格已定版", true); $("#persona-text").value = ""; $("#persona-reason").value = ""; loadPersona();
+    const d = await api("/api/persona/version", {text: $("#persona-text").value,
+      reason: $("#persona-reason").value, name: $("#persona-name").value || undefined});
+    msg(`${t("b_save_version")} ✓ v${d.version} (${d.name})`, true);
+    $("#persona-text").value = ""; $("#persona-reason").value = ""; loadPersona(); loadOverview();
   } catch (e) { msg(e.message, false); }
 }
 async function addSample() {
   try {
     await api("/api/persona/sample", {user: $("#ps-user").value, agent: $("#ps-agent").value, tag: $("#ps-tag").value});
-    msg("样本已追加", true); $("#ps-user").value = ""; $("#ps-agent").value = ""; loadPersona();
+    msg(t("b_addsample") + " ✓", true); $("#ps-user").value = ""; $("#ps-agent").value = ""; loadPersona();
   } catch (e) { msg(e.message, false); }
 }
 async function loadRedlines() {
   const d = await api("/api/redlines");
   $("#rl-tab tbody").innerHTML = d.redlines.map(r =>
     `<tr><td>${r.id}</td>
-     <td><span class="tag ${r.enabled ? "on" : "off"}">${r.enabled ? "生效" : "停用"}</span></td>
-     <td><span class="tag ${r.action}">${r.action}</span></td>
-     <td>${esc(r.scope)}</td><td>${esc(r.statement)}</td>
-     <td><code>${esc(r.pattern)}</code></td><td>${r.cases}</td>
-     <td><button class="mini" onclick="toggleRl(${r.id})">${r.enabled ? "停用" : "启用"}</button></td></tr>`).join("")
-    || `<tr><td colspan='8'><div class="empty"><div class="big">🛡️</div>暂无红线——录入后 memory_guard 将据此拦截危险操作</div></td></tr>`;
+     <td><span class="tag ${r.enabled ? "on" : "off"}">${r.enabled ? "✓" : "—"}</span></td>
+     <td><span class="tag ${r.action}">${({block:"拦截",warn:"警告",ask:"询问"}[LANG==="zh"?"zh":r.action] || r.action)}</span></td>
+     <td>${esc(r.statement)}</td>
+     <td><code>${esc(r.pattern.length > 40 ? r.pattern.slice(0,40) + "…" : r.pattern)}</code></td><td>${r.cases}</td>
+     <td><button class="mini" onclick="toggleRl(${r.id})">${r.enabled ? "停" : "启"}</button></td></tr>`).join("")
+    || `<tr><td colspan='7'><div class="empty"><div class="big">🛡️</div>${t("empty_redlines")}</div></td></tr>`;
 }
 async function toggleRl(id) {
   try { await api("/api/redlines/toggle", {id}); loadRedlines(); } catch (e) { msg(e.message, false); }
@@ -308,13 +419,13 @@ async function addRedline() {
   try {
     await api("/api/redlines", {pattern: $("#rl-pattern").value, statement: $("#rl-stmt").value,
                                 action: $("#rl-action").value, scope: $("#rl-scope").value || "global"});
-    msg("红线已录入——记得补正反用例", true); $("#rl-pattern").value = ""; $("#rl-stmt").value = ""; loadRedlines();
+    msg(t("b_add") + " ✓", true); $("#rl-pattern").value = ""; $("#rl-stmt").value = ""; loadRedlines();
   } catch (e) { msg(e.message, false); }
 }
 async function addRt() {
   try {
     await api("/api/redlines/test", {redline_id: +$("#rt-id").value, case: $("#rt-case").value, sample: $("#rt-sample").value});
-    msg("用例已录入", true); $("#rt-sample").value = ""; loadRedlines();
+    msg(t("b_addcase") + " ✓", true); $("#rt-sample").value = ""; loadRedlines();
   } catch (e) { msg(e.message, false); }
 }
 async function runGuardTest() {
@@ -322,8 +433,8 @@ async function runGuardTest() {
     const d = await api("/api/guard-test");
     $("#gt-out").classList.remove("hide");
     $("#gt-out").textContent = d.results.map(r =>
-      `[${r.pass ? "PASS" : "FAIL"}] 红线#${r.redline_id} ${r.case_type} 期望=${r.expected_action} 实际=${r.actual_action ?? r.actual}`).join("\n")
-      + `\n\n执行 ${d.total} 项，通过 ${d.passed}，失败 ${d.total - d.passed}`;
+      `[${r.pass ? "PASS" : "FAIL"}] #${r.redline_id} ${r.case_type} E=${r.expected_action} A=${r.actual_action ?? r.actual}`).join("\n")
+      + `\n\n${d.passed}/${d.total}`;
   } catch (e) { msg(e.message, false); }
 }
 async function doRecall() {
@@ -331,10 +442,10 @@ async function doRecall() {
     const q = $("#rc-q").value;
     const d = await api("/api/recall?q=" + encodeURIComponent(q));
     $("#rc-out").innerHTML = d.items.length
-      ? `<p class="muted">延迟 ${d.latency_ms}ms，命中 ${d.items.length} 条（停止于 ${esc(d.stopped_by)}）</p>` +
-        `<table><thead><tr><th>类型</th><th>证据</th><th>内容</th><th>指针</th></tr></thead><tbody>` +
-        d.items.map(i => `<tr><td>${esc(i.kind)}</td><td>${esc(i.evidence_level)}</td><td>${esc(i.statement)}</td><td style="max-width:160px;word-break:break-all"><code>${esc(i.source_pointer||"")}</code></td></tr>`).join("") + "</tbody></table>"
-      : `<div class="empty"><div class="big">🔍</div>无命中——换个关键词试试</div>`;
+      ? `<p class="muted">${t("recall_meta")(d.latency_ms, d.items.length, d.stopped_by)}</p>` +
+        `<table><thead><tr><th>${t("t_kind")||"类型"}</th><th>EV</th><th>${t("t_statement")}</th><th>PTR</th></tr></thead><tbody>` +
+        d.items.map(i => `<tr><td>${esc(i.kind)}</td><td>${esc(i.evidence_level)}</td><td>${esc(i.statement)}</td><td style="max-width:150px;word-break:break-all"><code>${esc(i.source_pointer||"")}</code></td></tr>`).join("") + "</tbody></table>"
+      : `<div class="empty">${t("empty_recall")}</div>`;
   } catch (e) { msg(e.message, false); }
 }
 async function runDoctor() {
@@ -344,9 +455,19 @@ async function runDoctor() {
     $("#dt-out").textContent = d.output;
   } catch (e) { msg(e.message, false); }
 }
-loadOverview();
-loadPersona();
-loadRedlines();
+async function loadLicense() {
+  const d = await api("/api/license");
+  $("#lic-state").innerHTML = d.activated
+    ? `<span class="tag on">${t("lic_ok")}</span> <code>${esc(d.key_masked)}</code> <span class="muted">${esc(d.plan||"")} · ${esc((d.activated_at||"").slice(0,19))}</span>`
+    : `<span class="tag off">${t("lic_no")}</span>`;
+}
+async function activateLicense() {
+  try {
+    const d = await api("/api/license", {key: $("#lic-key").value});
+    msg(t("lic_ok") + " ✓", true); loadLicense();
+  } catch (e) { msg(e.message, false); }
+}
+applyLang();
 </script>
 </body>
 </html>

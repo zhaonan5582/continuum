@@ -76,10 +76,13 @@ def cmd_persona_list(args) -> int:
 
 def cmd_persona_version(args) -> int:
     be = _open_backend(args.db)
+    name = getattr(args, "name", None) or "default"
     cur = be.persona_current()
-    parent = cur["version"] if cur else None
-    ver = be.persona_create(snapshot_md=args.text, change_reason=args.reason, parent_version=parent)
-    print(f"人格 v{ver} 已创建（parent=v{parent}，reason={args.reason}）")
+    parent = cur["version"] if cur and cur["name"] == name else None
+    ver = be.persona_create(snapshot_md=args.text, change_reason=args.reason,
+                            parent_version=parent, name=name)
+    state = "已激活" if be.persona_current() and be.persona_current()["version"] == ver else "未激活"
+    print(f"人格 v{ver}（{name}）已创建（parent={f'v{parent}' if parent else '无'}，reason={args.reason}，{state}）")
     be.close()
     return 0
 
@@ -323,6 +326,8 @@ def build_parser() -> argparse.ArgumentParser:
     pv = psub.add_parser("version", help="创建人格新版本")
     pv.add_argument("--text", required=True)
     pv.add_argument("--reason", required=True)
+    pv.add_argument("--name", default="default",
+                    help="人格套名称（同名=新版本；新名称=新建一套并自动激活）")
     pv.set_defaults(func=cmd_persona_version)
     pc = psub.add_parser("current", help="查看当前人格")
     pc.set_defaults(func=cmd_persona_current)
