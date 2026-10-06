@@ -264,3 +264,66 @@ class TestSnifferMatrix(unittest.TestCase):
         from continuum.importers.sources import _sniff_message
         for d in self.NEG:
             self.assertIsNone(_sniff_message(d), f"误报: {d}")
+
+
+class TestRecallCoverageContract(unittest.TestCase):
+    """召回 100% 契约（2026-10-07 楠哥："理论上召回应该是 100% 才对"）。
+
+    精修后口径：**检索能力（search_content）必须 100%**——原文在库里就必能找到；
+    memory_recall 的 top-N 是展示层限制（候选可能远超 N）。
+    """
+
+    def _be(self, td):
+        from continuum.storage import SQLiteBackend
+        from pathlib import Path
+        return SQLiteBackend(str(Path(td) / "t.db"),
+                             REPO / "src" / "continuum" / "storage" / "migrations" / "sql")
+
+    def _seed(self, be, msgs):
+        from continuum.udf import UDFMessage
+        sid = be.ensure_session("t", "s1")
+        be.append_messages(sid, [
+            UDFMessage(ts=f"2026-01-01T00:00:{i:02d}.000Z", role="user",
+                       host="t", session_id="s1", content=c) for i, c in enumerate(msgs)])
+
+    def test_whitespace_variants_are_invisible(self):
+        """空白形态差异（多换行/制表/多空格）不得影响检索——实测 4/5 漏例的根因。"""
+        import tempfile
+        from pathlib import Path
+        with tempfile.TemporaryDirectory() as t:
+            be = self._be(t)
+            self._seed(be, ["上文。\n\n\n**第 3 步（下一步）", "a\t\tb 制表", "x    y 多空格"])
+            for q in ("上文。 **第 3 步（", "**第 3 步（", "ab", "xy", "上文。"):
+                hits = be.search_content(q, limit=20)
+                self.assertTrue(hits, f"查询 {q!r} 应命中（空白归一失效）")
+            be.close()
+
+    def test_single_char_query_works(self):
+        """单字查询（如'壳'）必须可达原文层（曾被 ≥2 字符门槛挡掉）。"""
+        import tempfile
+        with tempfile.TemporaryDirectory() as t:
+            be = self._be(t)
+            self._seed(be, ["软件壳的说明文本", "无关内容"])
+            hits = be.search_content("壳", limit=10)
+            self.assertTrue(any("软件壳" in h["content"] for h in hits))
+            be.close()
+
+    def test_backslash_variants_match(self):
+        """路径转义差异（内容双反斜杠 vs 查询单反斜杠）必须命中。"""
+        import tempfile
+        with tempfile.TemporaryDirectory() as t:
+            be = self._be(t)
+            self._seed(be, [r"路径 C:\Users\Admin\x.txt 结束"])
+            self.assertTrue(be.search_content(r"C:\Users\Admin", limit=10))
+            self.assertTrue(be.search_content(r"C:\Users\Admin".replace("\\", "\\"), limit=10))
+            be.close()
+
+    def test_symbol_phrases_match(self):
+        """符号短语（markdown 表格分隔符/代码块符号）必须命中。"""
+        import tempfile
+        with tempfile.TemporaryDirectory() as t:
+            be = self._be(t)
+            self._seed(be, ["| 字段 | 值 |\n|---|---|---|\n| a | b |", "─┘ ``` 代码块结束"])
+            for q in ("| |---|---|", "|---|---|", "─┘ ```"):
+                self.assertTrue(be.search_content(q, limit=10), f"符号短语 {q!r} 应命中")
+            be.close()

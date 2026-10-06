@@ -197,71 +197,75 @@ class SQLiteBackend(StorageBackend):
 
     def search_content(self, query: str, limit: int = 20,
                        host_agent: str | None = None) -> list[dict]:
-        """原文寻回（L3 唯一无损层）——**两级通道，目标 99%+ 召回**：
+        """原文寻回（L3 唯一无损层）——**目标 100% 召回**（原文在库里就该找得到）。
 
-        一级 FTS5 trigram 短语（快，但 ≥3 字符才有效；含 | ` ─ 等符号的短语可能失配）；
-        二级 LIKE 兜底（短查询必走、一级空结果时补走）——2026-10-06 实测事故：
-        2 字中文查询完全够不到原文层（召回 30%）、符号短语漏（长片段 55%），
-        与"对话全量入库、任何内容可寻回"的承诺冲突。LIKE 全表扫换召回覆盖，
-        LIMIT 控制成本（40MB 语料实测 < 300ms，可接受）。
+        两阶段架构（2026-10-07 精修，实测定位后重写）：
+        - **① SQL 粗筛（宽松，宁可多召回）**：取查询中**最长的连续非空白子串**做 LIKE
+          —— 它按定义一定字面存在于原文（除非原文用了不同空白），排除假阴性；
+          再用 LIKE（含反斜杠折叠）补一轮。
+        - **② Python 精筛（严格，完全空白归一后精确匹配）**：两侧都把任意连续空白
+          压缩为单空格再判子串 —— 解决 `\\n\\n`（两空格）vs 查询单空格、跨行片段等
+          一切空白形态差异（实测 4/5 漏例的根因）。
         """
-        q = query.strip()
+        import re as _re
+
+        q = (query or "").strip()
         if not q:
             return []
+        q_nospace = _re.sub(r"\s+", "", q)         # 去全部空白（两侧对齐用）
         host_filter = ""
         extra: list = []
         if host_agent:
             host_filter = " AND m.session_id IN (SELECT id FROM sessions WHERE host_agent = ?)"
             extra.append(host_agent)
 
-        rows: list[dict] = []
-        seen_ids: set = set()
-
         def _esc(s: str) -> str:
             return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
-        # 一级：LIKE 连续子串（**最强证据**：字面包含；且天然覆盖短查询 1-2 字、
-        # 符号短语、反斜杠归一）。2026-10-06 实测：FTS 先行且满额会挤掉兜底
-        # （rank 排序不含目标 → len(rows)==limit → LIKE 永不触发，召回 85-90%）。
-        # 反斜杠归一：内容里 C:\\Users（JSON 转义残留）与查询 C:\Users 对齐。
-        q_single = q.replace("\\\\", "\\")
-        # 空白归一（两侧同时做）：跨行片段（原文 'git\npush' vs 查询 'git push'）
-        # 是"找回原话"的常见形态（实测漏例多为此类）——内容侧换行/制表 → 空格
-        q_norm = q_single.replace("\r", " ").replace("\n", " ").replace("\t", " ")
-        # 候选放大 + 短内容优先：片段越普遍命中越多（实测某片段 101 条），
-        # top-N 展示会挤掉目标——按内容长度升序（同片段在短内容里占比大 =
-        # 更可能是"用户指的那句话"），并放大候选池避免饿死
-        like_rows = self.conn.execute(
-            "SELECT m.id, m.session_id, m.role, m.ts, m.content, NULL AS snip"
-            " FROM messages m WHERE"
-            " REPLACE(REPLACE(REPLACE(REPLACE(m.content, '\\\\', '\\'), char(13), ' '),"
-            " char(10), ' '), char(9), ' ')"
-            " LIKE ? ESCAPE '\\'" + host_filter +
-            " ORDER BY LENGTH(m.content) ASC, m.id DESC LIMIT ?",
-            [f"%{_esc(q_norm)}%"] + extra + [max(limit * 5, 50)],
-        ).fetchall()
-        for r in like_rows:
-            seen_ids.add(r["id"])
-            rows.append(dict(r))
+        # ---- ① SQL 粗筛：**两侧都去全部空白**后 LIKE ----
+        #   实测教训：仅把 \n 换成单空格不能压连续空白（原文 \n\n → 两空格 vs 查询单空格），
+        #   且中文 2-3 字会被 \S{4,} 门槛挡掉 —— 两者叠加导致 5 条假阴性。
+        #   去全部空白后，任何空白形态差异（换行/多空格/制表）都不影响匹配。
+        #   内容侧同时做反斜杠折叠（路径转义差异）。
+        nospace_expr = (
+            "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(m.content,"
+            " '\\\\', '\\'), char(13), ''), char(10), ''), char(9), ''), ' ', ''), char(160), '')"
+        )
+        probes: list[str] = []
+        if q_nospace:                              # 单字也允许（如'壳'——召回优先）
+            probes.append(q_nospace[:60])          # 去空白整串（最有判别力）
+        chunks = sorted(_re.findall(r"\S{2,}", q), key=len, reverse=True)
+        if chunks:
+            probes.append(_re.sub(r"\s+", "", chunks[0])[:60])
 
-        # 二级：FTS trigram（语义化排序补充；≥3 字符有效）
-        if len(q) >= 3 and len(rows) < limit:
-            phrase = q[:40] if len(q) > 40 else q
+        candidates: dict[int, dict] = {}
+        for probe in dict.fromkeys(probes):        # 去重保序
+            if not probe:
+                continue
             try:
-                for r in self.conn.execute(
-                    "SELECT m.id, m.session_id, m.role, m.ts, m.content,"
-                    " snippet(messages_fts, 0, '<<', '>>', '…', 64) AS snip"
-                    " FROM messages_fts f JOIN messages m ON m.id = f.rowid"
-                    " WHERE messages_fts MATCH ?" + host_filter +
-                    " ORDER BY rank LIMIT ?",
-                    [f'"{phrase}"'] + extra + [limit - len(rows)],
-                ).fetchall():
-                    if r["id"] not in seen_ids:
-                        seen_ids.add(r["id"])
-                        rows.append(dict(r))
+                rows = self.conn.execute(
+                    "SELECT m.id, m.session_id, m.role, m.ts, m.content, NULL AS snip"
+                    " FROM messages m WHERE " + nospace_expr + " LIKE ? ESCAPE '\\'"
+                    + host_filter +
+                    " ORDER BY LENGTH(m.content) ASC, m.id DESC LIMIT ?",
+                    [f"%{_esc(probe)}%"] + extra + [max(limit * 5, 100)],
+                ).fetchall()
             except sqlite3.OperationalError:
-                pass               # FTS 语法边缘（符号短语）→ 一级已覆盖
-        return rows
+                continue
+            for r in rows:
+                candidates.setdefault(r["id"], dict(r))
+            if len(candidates) >= limit * 5:
+                break
+
+        # ---- ② Python 精筛：两侧去全部空白后精确子串匹配 ----
+        out: list[dict] = []
+        for r in candidates.values():
+            if q_nospace in _re.sub(r"\s+", "", r["content"]):
+                out.append(r)
+        if len(out) < limit:                       # 粗筛候选兜底补回（宁可多召回）
+            seen = {r["id"] for r in out}
+            out += [r for r in candidates.values() if r["id"] not in seen]
+        return out[: max(limit * 5, limit)]
 
     # ---- audit ----
     def audit(self, actor: str, action: str, target: str | None, detail: dict | None = None) -> int:
