@@ -46,6 +46,15 @@ continuum shell --db ~/memory.continuum.db
 记忆库总览与跨会话检索、沉淀触发、一键体检——全部点选化，不需要记任何命令。
 界面支持 **16 种语言**（中/繁/英/日/韩/西/法/德/葡/俄/意/土/越/印尼/阿/印地，阿语自动 RTL）。
 
+**后台常驻（推荐）**——不需要一直开着命令行窗口：
+
+```bash
+continuum shell --install-autostart    # 注册登录自启（后台无窗口运行，日志落 ~/.continuum/shell.log）
+continuum shell --uninstall-autostart  # 取消自启
+```
+
+注册后每次登录自动在后台运行，浏览器直接访问 <http://127.0.0.1:8501> 即可。
+
 ### 保持喂食（会话内容持续入库）
 
 Continuum 的「喂食器」主动扫描宿主会话文件并增量入库——**独立节奏，不依赖任何工具调用**：
