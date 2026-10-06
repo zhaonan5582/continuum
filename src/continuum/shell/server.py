@@ -119,7 +119,7 @@ class ShellHandler(BaseHTTPRequestHandler):
                 elif path == "/api/extract":
                     self._json(self.api_extract(body))
                 elif path == "/api/doctor":
-                    self._json(self.api_doctor())
+                    self._json(self.api_doctor(self._body() if self.headers.get("Content-Length") else {}))
                 elif path == "/api/license":
                     self._json(self.api_license_activate(body))
                 else:
@@ -260,11 +260,12 @@ class ShellHandler(BaseHTTPRequestHandler):
         return {"active": r.produced_active, "pending": r.produced_pending,
                 "scanned": r.scanned_messages}
 
-    def api_doctor(self) -> dict:
+    def api_doctor(self, body: dict | None = None) -> dict:
         from continuum.doctor import run_doctor
+        lang = (body or {}).get("lang") or "zh"
         buf = StringIO()
         with redirect_stdout(buf):
-            code = run_doctor()
+            code = run_doctor(lang=lang)
         return {"output": buf.getvalue(), "code": code}
 
     # ---- 授权（骨架：本地格式校验 + 存储；在线激活/签名校验随商业化接入） ----

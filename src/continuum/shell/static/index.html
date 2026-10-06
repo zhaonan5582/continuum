@@ -473,7 +473,7 @@ async function doRecall() {
 }
 async function runDoctor() {
   try {
-    const d = await api("/api/doctor", {});
+    const d = await api("/api/doctor", {lang: LANG});
     $("#dt-out").classList.remove("hide");
     $("#dt-out").textContent = d.output;
   } catch (e) { msg(e.message, false); }
