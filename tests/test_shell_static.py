@@ -20,6 +20,12 @@ class TestShellStatic(unittest.TestCase):
         self.js = re.search(r"<script>([\s\S]*)</script>", self.src).group(1)
         self.html = self.src[: self.src.index("<script>")]
 
+    def test_hide_class_defined(self):
+        """.hide 功能类必须在 CSS 中定义（2026-10-06 实测：改版丢规则导致
+        会话浏览器「收起/搜索」全部失效——JS 加类无样式可匹配）。"""
+        self.assertIn(".hide", self.src)
+        self.assertRegex(self.src, r"\.hide\s*\{[^}]*display:\s*none")
+
     def test_js_referenced_ids_all_defined(self):
         """JS 引用的每个 #id 必须在 HTML 中定义（改版后 id 失配 = 页面静默坏）。"""
         used = set(re.findall(r'\$\("#([\w-]+)"\)', self.js))
