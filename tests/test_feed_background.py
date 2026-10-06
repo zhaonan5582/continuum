@@ -123,3 +123,17 @@ class TestFeedCLI(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestShellAutostartArgs(unittest.TestCase):
+    """shell autostart 参数解析契约（只解析不执行——真注册会改系统，仅手动验证）。"""
+
+    def test_parse_install_uninstall_daemon(self):
+        from continuum.cli import build_parser
+        p = build_parser()
+        a = p.parse_args(["--db", "x.db", "shell", "--install-autostart"])
+        self.assertTrue(a.install_autostart)
+        a = p.parse_args(["--db", "x.db", "shell", "--uninstall-autostart"])
+        self.assertTrue(a.uninstall_autostart)
+        a = p.parse_args(["--db", "x.db", "shell", "--daemon", "--no-browser"])
+        self.assertTrue(a.daemon and a.no_browser)

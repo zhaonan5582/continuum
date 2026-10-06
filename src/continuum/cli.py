@@ -188,8 +188,18 @@ def cmd_doctor(args) -> int:
 
 
 def cmd_shell(args) -> int:
-    """软件壳：本机回环图形界面（127.0.0.1，非外联）——设置全部点选化。"""
+    """软件壳：本机回环图形界面（127.0.0.1，非外联）——设置全部点选化。
+    --install-autostart / --uninstall-autostart：注册/移除登录自启（后台无窗口常驻，
+    用户不再需要开着命令行窗口——成熟产品形态）；--daemon：本次运行后台化（日志落盘）。"""
     from http.server import ThreadingHTTPServer  # noqa: F401 - 预检导入失败尽早暴露
+
+    if getattr(args, "install_autostart", False):
+        return _shell_autostart_install(args)
+    if getattr(args, "uninstall_autostart", False):
+        return _shell_autostart_uninstall()
+
+    if getattr(args, "daemon", False):
+        _redirect_to_log()               # 无控制台场景：stdout/stderr 落盘 ~/.continuum/shell.log
 
     srv = _open_server(args.db)
     try:                                 # 壳常驻期间也真喂食（与 serve 同款后台线程）
@@ -202,6 +212,57 @@ def cmd_shell(args) -> int:
     from continuum.shell.server import run_shell
 
     run_shell(srv, args.db, port=args.port, open_browser=not args.no_browser)
+    return 0
+
+
+TASK_NAME = "ContinuumShell"        # 计划任务名（安装/卸载共用一个）
+
+
+def _redirect_to_log() -> None:
+    """把 stdout/stderr 重定向到 ~/.continuum/shell.log（无控制台运行场景）。"""
+    import sys as _sys
+    log_path = Path.home() / ".continuum" / "shell.log"
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    f = open(log_path, "a", encoding="utf-8", buffering=1)
+    _sys.stdout = f
+    _sys.stderr = f
+
+
+def _shell_autostart_install(args) -> int:
+    """注册登录自启的计划任务（无窗口后台跑壳）——解决"必须开着命令行"。
+    实现：schtasks ONLOGON + pythonw（venv Scripts 下自带的无控制台解释器）。"""
+    import subprocess as _sp
+    import sys as _sys
+
+    pyw = Path(_sys.executable).with_name("pythonw.exe")
+    if not pyw.exists():
+        pyw = Path(_sys.executable)      # 退化：用带控制台的解释器（仍可工作）
+    db = os.path.abspath(os.path.expanduser(args.db))
+    tr = f'"{pyw}" -m continuum.cli --db "{db}" shell --no-browser --daemon'
+    r = _sp.run(["schtasks", "/Create", "/TN", TASK_NAME, "/TR", tr,
+                 "/SC", "ONLOGON", "/F"],
+                capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if r.returncode != 0:
+        print(f"注册失败：{(r.stderr or r.stdout or '').strip()[:300]}")
+        print("（如提示权限不足，用管理员权限的终端重跑本命令）")
+        return 1
+    print(f"[OK] 已注册登录自启：{TASK_NAME}")
+    print(f"  命令: {tr}")
+    print("  壳将在下次登录时自动后台运行（无窗口），日志见 ~/.continuum/shell.log")
+    print(f"  立即启动（无需等下次登录）：schtasks /Run /TN {TASK_NAME}")
+    print("  取消自启：continuum shell --uninstall-autostart")
+    return 0
+
+
+def _shell_autostart_uninstall() -> int:
+    import subprocess as _sp
+
+    r = _sp.run(["schtasks", "/Delete", "/TN", TASK_NAME, "/F"],
+                capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if r.returncode != 0:
+        print(f"移除失败（可能未注册）：{(r.stderr or r.stdout or '').strip()[:200]}")
+        return 1
+    print(f"[OK] 已移除自启任务：{TASK_NAME}（若壳正在运行，可手动结束对应 pythonw 进程）")
     return 0
 
 
@@ -417,6 +478,11 @@ def build_parser() -> argparse.ArgumentParser:
                     help="记忆库路径（也可放子命令前：continuum --db X shell）")
     sh.add_argument("--port", type=int, default=8501, help="监听端口（默认 8501，仅 127.0.0.1）")
     sh.add_argument("--no-browser", action="store_true", help="不自动打开浏览器")
+    sh.add_argument("--daemon", action="store_true",
+                    help="后台化运行（日志落盘 ~/.continuum/shell.log）")
+    sh.add_argument("--install-autostart", action="store_true",
+                    help="注册登录自启（后台常驻，无需再开命令行窗口）")
+    sh.add_argument("--uninstall-autostart", action="store_true", help="移除登录自启")
     sh.set_defaults(func=cmd_shell)
 
     fd = sub.add_parser("feed", help="喂食器：主动扫描宿主会话文件增量入库（真喂食）")
