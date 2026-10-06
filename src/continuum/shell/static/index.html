@@ -39,6 +39,11 @@
   /* nowrap + shrink:0：空间不足时换行而不是把中文压成竖排（2026-10-06 实测事故） */
   nav a { text-decoration: none; padding: 6px 11px; border-radius: 9px; font-size: 13px;
           color: #cbd5e1; transition: .15s; white-space: nowrap; flex-shrink: 0; }
+  /* 语言选择框窄化：默认宽度按最长选项（Bahasa Indonesia）撑满整行，
+     把导航项挤到下一行（2026-10-06 楠哥实测）——固定窄宽 + 与导航同行 */
+  nav select { width: 104px; flex-shrink: 0; font-size: 12.5px; padding: 5px 6px;
+               border-radius: 8px; border: 1px solid rgba(255,255,255,.22);
+               background: rgba(255,255,255,.08); color: #e2e8f0; cursor: pointer; }
   nav a:hover { color: #fff; background: rgba(255,255,255,.09); }
   .lang-btn { border: 1px solid rgba(255,255,255,.25); background: transparent; color: #cbd5e1;
               border-radius: 8px; padding: 5px 12px; cursor: pointer; font-size: 12px; }
