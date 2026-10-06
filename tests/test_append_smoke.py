@@ -11,6 +11,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from continuum.storage import SQLiteBackend  # noqa: E402
 from continuum.udf import UDFMessage, UDFMeta  # noqa: E402
+from continuum.server import ContinuumServer  # noqa: E402
+from continuum.server.tools import AppendRequest  # noqa: E402
 
 MIGRATIONS = Path(__file__).resolve().parents[1] / "src" / "continuum" / "storage" / "migrations" / "sql"
 
@@ -103,3 +105,28 @@ class TestAppendSmoke(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestSpecialCharsRoundtrip(unittest.TestCase):
+    """商业化前排查（2026-10-06）：特殊字符存储往返必须逐字节一致。
+    注意：验证对象是存储层（messages.content），不是 recall（FTS 分词会改写匹配）。"""
+
+    def setUp(self):
+        self.be = SQLiteBackend(":memory:", MIGRATIONS)
+        self.srv = ContinuumServer(self.be)
+
+    def tearDown(self):
+        self.be.close()
+
+    def test_weird_chars_verbatim(self):
+        weird = ["emoji 🧠🛡️✨", "引号\"双引号和'单引号", r"反斜杠C://path//to",
+                 "换行\n第二行", "<script>alert(1)</script>", "中文＋日本語한국어"]
+        msgs = [UDFMessage(ts=f"2026-01-01T00:00:{i:02d}.000Z", role="user",
+                           host="w", session_id="x", content=c)
+                for i, c in enumerate(weird)]
+        self.srv.memory_append(AppendRequest(host_agent="w", external_session_id="x",
+                                             messages=tuple(msgs)))
+        sid = self.be.conn.execute("SELECT id FROM sessions").fetchone()["id"]
+        stored = [r["content"] for r in self.be.conn.execute(
+            "SELECT content FROM messages WHERE session_id=? ORDER BY seq", (sid,))]
+        self.assertEqual(weird, stored)

@@ -107,7 +107,17 @@ def cmd_import_workbuddy(args) -> int:
     from continuum.importers import import_workbuddy_session
 
     be = _open_backend(args.db)
-    rep = import_workbuddy_session(args.jsonl, be, project_id=args.project, title=args.title)
+    try:
+        rep = import_workbuddy_session(args.jsonl, be, project_id=args.project, title=args.title)
+    except FileNotFoundError as e:
+        print(f"导入失败：文件不存在——{e}\n请检查路径后重试。")
+        be.close()
+        return 1
+    except Exception as e:  # noqa: BLE001 - 用户侧错误一律人类可读，不留裸 traceback
+        print(f"导入失败：文件无法解析（{type(e).__name__}: {e}）\n"
+              f"请确认是 WorkBuddy 会话 jsonl 文件（每行一个 JSON 对象）。")
+        be.close()
+        return 1
     print(f"导入完成: 总行 {rep.total_lines} / 导入 {rep.imported_messages} / "
           f"非正文 {rep.skipped_non_message} / 空内容 {rep.skipped_empty_content} / "
           f"超大跳过 {rep.skipped_oversized}")

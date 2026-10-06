@@ -146,7 +146,7 @@ def run_proxy(host: str = "127.0.0.1", port: int = 8402,
         "assembly_text": None,
     })
     server = HTTPServer((host, port), handler)
-    print(f"Continuum proxy listening on http://{host}:{port}")
+    print(f"Continuum proxy listening on http://{host}:{port}", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

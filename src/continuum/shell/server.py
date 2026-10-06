@@ -313,7 +313,7 @@ def run_shell(srv: ContinuumServer, db_path: str, port: int = 8501,
               open_browser: bool = True) -> None:
     httpd = make_server(srv, db_path, port=port)
     url = f"http://127.0.0.1:{httpd.server_address[1]}"
-    print(f"Continuum 软件壳已启动：{url}  （Ctrl+C 退出；仅本机可访问）")
+    print(f"Continuum 软件壳已启动：{url}  （Ctrl+C 退出；仅本机可访问）", flush=True)
     if open_browser:
         threading.Thread(target=lambda: (webbrowser.open(url)),
                          daemon=True).start()
