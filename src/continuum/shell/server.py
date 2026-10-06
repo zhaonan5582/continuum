@@ -109,6 +109,10 @@ class ShellHandler(BaseHTTPRequestHandler):
                     self._json(self.api_session_messages(
                         sid, int(qs.get("offset", ["0"])[0]),
                         int(qs.get("limit", ["50"])[0]), qs.get("q", [""])[0]))
+                elif path == "/api/workload":
+                    from urllib.parse import urlparse, parse_qs
+                    qs = parse_qs(urlparse(self.path).query)
+                    self._json(self.api_workload(int(qs.get("days", ["7"])[0])))
                 elif path == "/api/recall":
                     from urllib.parse import urlparse, parse_qs
                     qs = parse_qs(urlparse(self.path).query)
@@ -183,6 +187,78 @@ class ShellHandler(BaseHTTPRequestHandler):
         return {"stats": stats, "sessions": sessions, "db_path": self.db_path,
                 "plan": st.plan, "activated": st.activated,
                 "features": list(features_unlocked())}
+
+    def api_workload(self, days: int = 7) -> dict:
+        """工作节奏与健康提示（本地时区聚合）——数据回馈用户本人。
+
+        - 全部会话的消息时间戳是唯一数据源（跨宿主的真实工作强度）；
+        - insights 只出 key + args，**文案由前端 16 语言包渲染**（避免后端文案
+          落进 i18n 盲区——2026-10-06 doctor 教训）；
+        - 语气克制：陈述客观数据，不评判、不说教（人设：老王的观察）。
+        """
+        from datetime import datetime, timedelta, timezone
+        from collections import defaultdict
+
+        local_tz = datetime.now().astimezone().tzinfo
+        rows = self.srv.be.conn.execute(
+            "SELECT ts FROM messages ORDER BY ts").fetchall()
+
+        per_day: dict[str, dict] = defaultdict(lambda: {"n": 0, "first": None, "last": None,
+                                                        "night": 0, "hourly": [0] * 24})
+        for r in rows:
+            try:
+                t = datetime.fromisoformat(str(r["ts"]).replace("Z", "+00:00")).astimezone(local_tz)
+            except (ValueError, TypeError):
+                continue
+            d = t.date().isoformat()
+            e = per_day[d]
+            e["n"] += 1
+            hhmmss = t.strftime("%H:%M:%S")
+            if e["first"] is None or hhmmss < e["first"]:
+                e["first"] = hhmmss
+            if e["last"] is None or hhmmss > e["last"]:
+                e["last"] = hhmmss
+            e["hourly"][t.hour] += 1
+            if 0 <= t.hour < 6:
+                e["night"] += 1
+
+        today_key = datetime.now(local_tz).date().isoformat()
+        # 近 N 天（含今天）
+        window: list[dict] = []
+        for i in range(days - 1, -1, -1):
+            d = (datetime.now(local_tz).date() - timedelta(days=i)).isoformat()
+            e = per_day.get(d)
+            span = 0.0
+            if e and e["first"] and e["last"]:
+                f_h, f_m, f_s = map(int, e["first"].split(":"))
+                l_h, l_m, l_s = map(int, e["last"].split(":"))
+                span = round(((l_h * 3600 + l_m * 60 + l_s) - (f_h * 3600 + f_m * 60 + f_s)) / 3600, 1)
+            window.append({"date": d, "total": e["n"] if e else 0,
+                           "first": e["first"] if e else None,
+                           "last": e["last"] if e else None,
+                           "span_hours": span,
+                           "night": e["night"] if e else 0,
+                           "hourly": e["hourly"] if e else [0] * 24})
+        t_e = per_day.get(today_key)
+        today = next((x for x in window if x["date"] == today_key), None)
+
+        # 健康提示（规则式，客观数据驱动）
+        insights: list[dict] = []
+        if today and today["span_hours"] >= 12:
+            insights.append({"key": "wk_span", "level": "warn",
+                             "args": {"hours": today["span_hours"]}})
+        if today and today["night"] >= 5:
+            insights.append({"key": "wk_night", "level": "warn",
+                             "args": {"count": today["night"]}})
+        intense = sum(1 for x in window if x["span_hours"] >= 12)
+        if intense >= 3:
+            insights.append({"key": "wk_week", "level": "info",
+                             "args": {"days": intense}})
+        if not insights:
+            insights.append({"key": "wk_ok", "level": "ok", "args": {}})
+
+        return {"today": today, "window": window,
+                "tz": str(local_tz), "insights": insights}
 
     def api_persona_get(self) -> dict:
         be = self.srv.be

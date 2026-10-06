@@ -191,6 +191,17 @@ class TestShellAPI(unittest.TestCase):
         d = self._post("/api/doctor", {"lang": "zh"})
         self.assertIn("配置文件", d["output"])
 
+    def test_workload_api(self):
+        """工作节奏 API：近 7 天窗口 + 今日 + 健康提示（key 由前端翻译）。"""
+        d = self._get("/api/workload?days=7")
+        self.assertIn("today", d)
+        self.assertEqual(len(d["window"]), 7)
+        self.assertTrue(d["insights"])
+        for i in d["insights"]:
+            self.assertIn("key", i)
+            self.assertTrue(i["key"].startswith("wk_"))
+        self.assertEqual(len(d["window"][-1]["hourly"]), 24)
+
     def test_toggle_redline(self):
         d = self._post("/api/redlines",
                        {"pattern": "legacy", "statement": "旧红线", "action": "block"})

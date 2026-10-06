@@ -93,6 +93,7 @@ const I18N = {
 "empty_redlines":"暂无红线——录入后拦截引擎将据此工作",
 "empty_recall":"无命中——换个关键词试试",
 "lic_ok":"激活成功",
+"nav_workload":"工作节奏","h_workload":"工作节奏","h_workload_sub":"（来自你的全部会话时间戳——跨宿主统计）","wl_week":"近 7 天","wl_msgs":"今日消息","wl_span":"跨度","wl_first":"开始","wl_last":"结束","wl_wk_span":"今天跨度 {hours} 小时——该歇会儿了，别硬扛","wl_wk_night":"今天深夜仍在工作（{count} 条消息）——身体比进度重要","wl_wk_week":"近 7 天有 {days} 天工作超 12 小时——节奏偏紧","wl_wk_ok":"节奏健康，保持",
 "lic_plan_free":"免费版","lic_plan_pro":"本地 Pro","lic_plan_cloud":"本地 Pro + 云","feat_cross_host":"跨宿主汇聚","feat_cloud_judge":"托管判决网关","feat_cloud_sync":"云同步备份","feat_unlocked":"已解锁","feat_locked":"未解锁","lic_features_title":"功能解锁状态","o_plan_pro":"本地 Pro","o_plan_cloud":"本地 Pro + 云",
 "lic_no":"未激活",
 "t_pattern":"匹配模式",
@@ -104,6 +105,7 @@ const I18N = {
 "act_ask":"询问"},
 
 "zh-TW": {
+"nav_workload":"Rhythm","h_workload":"Work rhythm","h_workload_sub":"(from all session timestamps)","wl_week":"Last 7 days","wl_msgs":"Messages","wl_span":"Span","wl_first":"Start","wl_last":"End","wl_wk_span":"Today spans {hours} hours — time to rest","wl_wk_night":"Still working late ({count} messages)","wl_wk_week":"{days} of 7 days over 12 hours","wl_wk_ok":"Healthy pace",
 "feat_cross_host":"跨宿主彙聚","feat_cloud_judge":"託管判決閘道","feat_cloud_sync":"雲同步備份",
 "feat_unlocked":"已解鎖","feat_locked":"未解鎖","lic_features_title":"功能解鎖狀態",
 "lic_plan_free":"免費版","lic_plan_pro":"Local Pro","lic_plan_cloud":"Local Pro + Cloud",
@@ -298,6 +300,7 @@ const I18N = {
 "empty_redlines":"No redlines yet",
 "empty_recall":"No match - try other keywords",
 "lic_ok":"Activated",
+"nav_workload":"Rhythm","h_workload":"Work rhythm","h_workload_sub":"(from all your session timestamps — cross-host)","wl_week":"Last 7 days","wl_msgs":"Messages today","wl_span":"Span","wl_first":"Start","wl_last":"End","wl_wk_span":"Today spans {hours} hours — time to rest, don't push through","wl_wk_night":"Still working late tonight ({count} messages) — your health outranks progress","wl_wk_week":"{days} of the last 7 days exceeded 12 hours — that's a heavy pace","wl_wk_ok":"Healthy pace, keep it up",
 "lic_plan_free":"Free","lic_plan_pro":"Local Pro","lic_plan_cloud":"Local Pro + Cloud","feat_cross_host":"Cross-host aggregation","feat_cloud_judge":"Hosted judgment gateway","feat_cloud_sync":"Cloud sync & backup","feat_unlocked":"Unlocked","feat_locked":"Locked","lic_features_title":"Feature unlock status","o_plan_pro":"Local Pro","o_plan_cloud":"Local Pro + Cloud",
 "lic_no":"Not activated",
 "t_pattern":"Pattern",
@@ -309,6 +312,7 @@ const I18N = {
 "act_ask":"Ask"},
 
 "ja": {
+"nav_workload":"Rhythm","h_workload":"Work rhythm","h_workload_sub":"(from all session timestamps)","wl_week":"Last 7 days","wl_msgs":"Messages","wl_span":"Span","wl_first":"Start","wl_last":"End","wl_wk_span":"Today spans {hours} hours — time to rest","wl_wk_night":"Still working late ({count} messages)","wl_wk_week":"{days} of 7 days over 12 hours","wl_wk_ok":"Healthy pace",
 "lic_plan_free":"無料版","lic_plan_pro":"Local Pro","lic_plan_cloud":"Local Pro + Cloud","o_plan_pro":"Local Pro","o_plan_cloud":"Local Pro + Cloud",
 "feat_cross_host":"Cross-host","feat_cloud_judge":"Judgment gateway","feat_cloud_sync":"Cloud sync","feat_unlocked":"Unlocked","feat_locked":"Locked","lic_features_title":"Features","running":"サービス実行中",
 "nav_overview":"概要",
@@ -411,6 +415,7 @@ const I18N = {
 "act_ask":"確認"},
 
 "ko": {
+"nav_workload":"Rhythm","h_workload":"Work rhythm","h_workload_sub":"(from all session timestamps)","wl_week":"Last 7 days","wl_msgs":"Messages","wl_span":"Span","wl_first":"Start","wl_last":"End","wl_wk_span":"Today spans {hours} hours — time to rest","wl_wk_night":"Still working late ({count} messages)","wl_wk_week":"{days} of 7 days over 12 hours","wl_wk_ok":"Healthy pace",
 "lic_plan_free":"무료","lic_plan_pro":"Local Pro","lic_plan_cloud":"Local Pro + Cloud","o_plan_pro":"Local Pro","o_plan_cloud":"Local Pro + Cloud",
 "feat_cross_host":"Cross-host","feat_cloud_judge":"Judgment gateway","feat_cloud_sync":"Cloud sync","feat_unlocked":"Unlocked","feat_locked":"Locked","lic_features_title":"Features","running":"서비스 실행 중",
 "nav_overview":"개요",
@@ -513,6 +518,7 @@ const I18N = {
 "act_ask":"확인"},
 
 "es": {
+"nav_workload":"Rhythm","h_workload":"Work rhythm","h_workload_sub":"(from all session timestamps)","wl_week":"Last 7 days","wl_msgs":"Messages","wl_span":"Span","wl_first":"Start","wl_last":"End","wl_wk_span":"Today spans {hours} hours — time to rest","wl_wk_night":"Still working late ({count} messages)","wl_wk_week":"{days} of 7 days over 12 hours","wl_wk_ok":"Healthy pace",
 "lic_plan_free":"Gratis","lic_plan_pro":"Local Pro","lic_plan_cloud":"Local Pro + Cloud","o_plan_pro":"Local Pro","o_plan_cloud":"Local Pro + Cloud",
 "feat_cross_host":"Cross-host","feat_cloud_judge":"Judgment gateway","feat_cloud_sync":"Cloud sync","feat_unlocked":"Unlocked","feat_locked":"Locked","lic_features_title":"Features","running":"Servicio en ejecución",
 "nav_overview":"Resumen",
@@ -615,6 +621,7 @@ const I18N = {
 "act_ask":"Preguntar"},
 
 "fr": {
+"nav_workload":"Rhythm","h_workload":"Work rhythm","h_workload_sub":"(from all session timestamps)","wl_week":"Last 7 days","wl_msgs":"Messages","wl_span":"Span","wl_first":"Start","wl_last":"End","wl_wk_span":"Today spans {hours} hours — time to rest","wl_wk_night":"Still working late ({count} messages)","wl_wk_week":"{days} of 7 days over 12 hours","wl_wk_ok":"Healthy pace",
 "lic_plan_free":"Gratuit","lic_plan_pro":"Local Pro","lic_plan_cloud":"Local Pro + Cloud","o_plan_pro":"Local Pro","o_plan_cloud":"Local Pro + Cloud",
 "feat_cross_host":"Cross-host","feat_cloud_judge":"Judgment gateway","feat_cloud_sync":"Cloud sync","feat_unlocked":"Unlocked","feat_locked":"Locked","lic_features_title":"Features","running":"Service en cours",
 "nav_overview":"Aperçu",
@@ -717,6 +724,7 @@ const I18N = {
 "act_ask":"Demander"},
 
 "de": {
+"nav_workload":"Rhythm","h_workload":"Work rhythm","h_workload_sub":"(from all session timestamps)","wl_week":"Last 7 days","wl_msgs":"Messages","wl_span":"Span","wl_first":"Start","wl_last":"End","wl_wk_span":"Today spans {hours} hours — time to rest","wl_wk_night":"Still working late ({count} messages)","wl_wk_week":"{days} of 7 days over 12 hours","wl_wk_ok":"Healthy pace",
 "lic_plan_free":"Kostenlos","lic_plan_pro":"Local Pro","lic_plan_cloud":"Local Pro + Cloud","o_plan_pro":"Local Pro","o_plan_cloud":"Local Pro + Cloud",
 "feat_cross_host":"Cross-host","feat_cloud_judge":"Judgment gateway","feat_cloud_sync":"Cloud sync","feat_unlocked":"Unlocked","feat_locked":"Locked","lic_features_title":"Features","running":"Dienst läuft",
 "nav_overview":"Übersicht",
@@ -819,6 +827,7 @@ const I18N = {
 "act_ask":"Fragen"},
 
 "pt": {
+"nav_workload":"Rhythm","h_workload":"Work rhythm","h_workload_sub":"(from all session timestamps)","wl_week":"Last 7 days","wl_msgs":"Messages","wl_span":"Span","wl_first":"Start","wl_last":"End","wl_wk_span":"Today spans {hours} hours — time to rest","wl_wk_night":"Still working late ({count} messages)","wl_wk_week":"{days} of 7 days over 12 hours","wl_wk_ok":"Healthy pace",
 "lic_plan_free":"Grátis","lic_plan_pro":"Local Pro","lic_plan_cloud":"Local Pro + Cloud","o_plan_pro":"Local Pro","o_plan_cloud":"Local Pro + Cloud",
 "feat_cross_host":"Cross-host","feat_cloud_judge":"Judgment gateway","feat_cloud_sync":"Cloud sync","feat_unlocked":"Unlocked","feat_locked":"Locked","lic_features_title":"Features","running":"Serviço em execução",
 "nav_overview":"Visão geral",
@@ -921,6 +930,7 @@ const I18N = {
 "act_ask":"Perguntar"},
 
 "ru": {
+"nav_workload":"Rhythm","h_workload":"Work rhythm","h_workload_sub":"(from all session timestamps)","wl_week":"Last 7 days","wl_msgs":"Messages","wl_span":"Span","wl_first":"Start","wl_last":"End","wl_wk_span":"Today spans {hours} hours — time to rest","wl_wk_night":"Still working late ({count} messages)","wl_wk_week":"{days} of 7 days over 12 hours","wl_wk_ok":"Healthy pace",
 "lic_plan_free":"Бесплатная","lic_plan_pro":"Local Pro","lic_plan_cloud":"Local Pro + Cloud","o_plan_pro":"Local Pro","o_plan_cloud":"Local Pro + Cloud",
 "feat_cross_host":"Cross-host","feat_cloud_judge":"Judgment gateway","feat_cloud_sync":"Cloud sync","feat_unlocked":"Unlocked","feat_locked":"Locked","lic_features_title":"Features","running":"Сервис работает",
 "nav_overview":"Обзор",
@@ -1023,6 +1033,7 @@ const I18N = {
 "act_ask":"Спросить"},
 
 "it": {
+"nav_workload":"Rhythm","h_workload":"Work rhythm","h_workload_sub":"(from all session timestamps)","wl_week":"Last 7 days","wl_msgs":"Messages","wl_span":"Span","wl_first":"Start","wl_last":"End","wl_wk_span":"Today spans {hours} hours — time to rest","wl_wk_night":"Still working late ({count} messages)","wl_wk_week":"{days} of 7 days over 12 hours","wl_wk_ok":"Healthy pace",
 "lic_plan_free":"Gratuito","lic_plan_pro":"Local Pro","lic_plan_cloud":"Local Pro + Cloud","o_plan_pro":"Local Pro","o_plan_cloud":"Local Pro + Cloud",
 "feat_cross_host":"Cross-host","feat_cloud_judge":"Judgment gateway","feat_cloud_sync":"Cloud sync","feat_unlocked":"Unlocked","feat_locked":"Locked","lic_features_title":"Features","running":"Servizio in esecuzione",
 "nav_overview":"Panoramica",
@@ -1125,6 +1136,7 @@ const I18N = {
 "act_ask":"Chiedi"},
 
 "tr": {
+"nav_workload":"Rhythm","h_workload":"Work rhythm","h_workload_sub":"(from all session timestamps)","wl_week":"Last 7 days","wl_msgs":"Messages","wl_span":"Span","wl_first":"Start","wl_last":"End","wl_wk_span":"Today spans {hours} hours — time to rest","wl_wk_night":"Still working late ({count} messages)","wl_wk_week":"{days} of 7 days over 12 hours","wl_wk_ok":"Healthy pace",
 "lic_plan_free":"Ücretsiz","lic_plan_pro":"Local Pro","lic_plan_cloud":"Local Pro + Cloud","o_plan_pro":"Local Pro","o_plan_cloud":"Local Pro + Cloud",
 "feat_cross_host":"Cross-host","feat_cloud_judge":"Judgment gateway","feat_cloud_sync":"Cloud sync","feat_unlocked":"Unlocked","feat_locked":"Locked","lic_features_title":"Features","running":"Servis çalışıyor",
 "nav_overview":"Genel Bakış",
@@ -1227,6 +1239,7 @@ const I18N = {
 "act_ask":"Sor"},
 
 "vi": {
+"nav_workload":"Rhythm","h_workload":"Work rhythm","h_workload_sub":"(from all session timestamps)","wl_week":"Last 7 days","wl_msgs":"Messages","wl_span":"Span","wl_first":"Start","wl_last":"End","wl_wk_span":"Today spans {hours} hours — time to rest","wl_wk_night":"Still working late ({count} messages)","wl_wk_week":"{days} of 7 days over 12 hours","wl_wk_ok":"Healthy pace",
 "lic_plan_free":"Miễn phí","lic_plan_pro":"Local Pro","lic_plan_cloud":"Local Pro + Cloud","o_plan_pro":"Local Pro","o_plan_cloud":"Local Pro + Cloud",
 "feat_cross_host":"Cross-host","feat_cloud_judge":"Judgment gateway","feat_cloud_sync":"Cloud sync","feat_unlocked":"Unlocked","feat_locked":"Locked","lic_features_title":"Features","running":"Dịch vụ đang chạy",
 "nav_overview":"Tổng quan",
@@ -1329,6 +1342,7 @@ const I18N = {
 "act_ask":"Hỏi"},
 
 "id": {
+"nav_workload":"Rhythm","h_workload":"Work rhythm","h_workload_sub":"(from all session timestamps)","wl_week":"Last 7 days","wl_msgs":"Messages","wl_span":"Span","wl_first":"Start","wl_last":"End","wl_wk_span":"Today spans {hours} hours — time to rest","wl_wk_night":"Still working late ({count} messages)","wl_wk_week":"{days} of 7 days over 12 hours","wl_wk_ok":"Healthy pace",
 "lic_plan_free":"Gratis","lic_plan_pro":"Local Pro","lic_plan_cloud":"Local Pro + Cloud","o_plan_pro":"Local Pro","o_plan_cloud":"Local Pro + Cloud",
 "feat_cross_host":"Cross-host","feat_cloud_judge":"Judgment gateway","feat_cloud_sync":"Cloud sync","feat_unlocked":"Unlocked","feat_locked":"Locked","lic_features_title":"Features","running":"Layanan berjalan",
 "nav_overview":"Ikhtisar",
@@ -1431,6 +1445,7 @@ const I18N = {
 "act_ask":"Tanya"},
 
 "ar": {
+"nav_workload":"Rhythm","h_workload":"Work rhythm","h_workload_sub":"(from all session timestamps)","wl_week":"Last 7 days","wl_msgs":"Messages","wl_span":"Span","wl_first":"Start","wl_last":"End","wl_wk_span":"Today spans {hours} hours — time to rest","wl_wk_night":"Still working late ({count} messages)","wl_wk_week":"{days} of 7 days over 12 hours","wl_wk_ok":"Healthy pace",
 "lic_plan_free":"مجاني","lic_plan_pro":"Local Pro","lic_plan_cloud":"Local Pro + Cloud","o_plan_pro":"Local Pro","o_plan_cloud":"Local Pro + Cloud",
 "feat_cross_host":"Cross-host","feat_cloud_judge":"Judgment gateway","feat_cloud_sync":"Cloud sync","feat_unlocked":"Unlocked","feat_locked":"Locked","lic_features_title":"Features","running":"الخدمة تعمل",
 "nav_overview":"نظرة عامة",
@@ -1533,6 +1548,7 @@ const I18N = {
 "act_ask":"سؤال"},
 
 "hi": {
+"nav_workload":"Rhythm","h_workload":"Work rhythm","h_workload_sub":"(from all session timestamps)","wl_week":"Last 7 days","wl_msgs":"Messages","wl_span":"Span","wl_first":"Start","wl_last":"End","wl_wk_span":"Today spans {hours} hours — time to rest","wl_wk_night":"Still working late ({count} messages)","wl_wk_week":"{days} of 7 days over 12 hours","wl_wk_ok":"Healthy pace",
 "lic_plan_free":"मुफ़्त","lic_plan_pro":"Local Pro","lic_plan_cloud":"Local Pro + Cloud","o_plan_pro":"Local Pro","o_plan_cloud":"Local Pro + Cloud",
 "feat_cross_host":"Cross-host","feat_cloud_judge":"Judgment gateway","feat_cloud_sync":"Cloud sync","feat_unlocked":"Unlocked","feat_locked":"Locked","lic_features_title":"Features","running":"सेवा चल रही है",
 "nav_overview":"अवलोकन",

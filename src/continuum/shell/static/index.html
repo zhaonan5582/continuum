@@ -134,6 +134,7 @@
     <div class="sub">跨 agent 持久记忆与连续人格层 · <span id="dbpath"></span></div></div>
   <span class="run-badge"><i></i><span data-i18n="running">服务运行中</span></span>
   <nav>
+    <a href="#v-workload" style="display:flex;align-items:center;gap:6px">🕐 <span data-i18n="nav_workload">工作节奏</span></a>
     <a href="#v-license" style="display:flex;align-items:center;gap:6px">🔑 <span data-i18n="nav_license">授权</span></a>
     
   </nav>
@@ -285,6 +286,18 @@
   </section>
   </section>
 
+  <!-- 工作节奏（数据回馈用户本人） -->
+  <section id="v-workload">
+    <div class="card"><h2><span class="ic">🕐</span><span data-i18n="h_workload">工作节奏</span>
+      <span class="muted" data-i18n="h_workload_sub">（来自你的全部会话时间戳——跨宿主统计）</span></h2>
+      <div id="wl-insights" style="margin-bottom:12px"></div>
+      <div class="stats" id="wl-today"></div>
+      <div id="wl-chart" style="margin-top:14px"></div>
+      <h2 style="margin-top:16px;font-size:13px"><span data-i18n="wl_week">近 7 天</span></h2>
+      <div id="wl-week"></div>
+    </div>
+  </section>
+
   <!-- 体检 -->
   <section id="v-doctor">
     <div class="card"><h2><span class="ic">🩺</span><span data-i18n="h_doctor">一键体检</span>
@@ -313,7 +326,7 @@ function applyLang() {
   document.querySelectorAll("[data-i18n-ph]").forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
   const sel = document.getElementById("lang-select");
   if (sel) sel.value = LANG;
-  loadOverview(); loadPersona(); loadRedlines(); loadLicense();
+  loadOverview(); loadPersona(); loadRedlines(); loadLicense(); loadWorkload();
 }
 function setLang(lang) {
   LANG = I18N[lang] ? lang : "en";
@@ -389,6 +402,43 @@ async function loadSessionMsgs(offset) {
     || `<div class="empty">${esc(t("empty_recall"))}</div>`;
   $("#sv-page").textContent = t("pg_info")(d.offset, d.limit, d.total);
 }
+function fmt(tpl, args) {
+  return (tpl || "").replace(/\{(\w+)\}/g, (_, k) => (args && args[k] !== undefined) ? args[k] : "");
+}
+const INSIGHT_STYLE = { warn: "color:var(--red)", info: "color:var(--brand)", ok: "color:var(--green)" };
+const INSIGHT_ICON = { warn: "⚠️", info: "💡", ok: "✓" };
+async function loadWorkload() {
+  let d;
+  try { d = await api("/api/workload?days=7"); } catch (e) { return; }
+  // 健康提示
+  $("#wl-insights").innerHTML = d.insights.map(i =>
+    `<div style="padding:8px 12px;border-radius:8px;background:var(--bg);margin-bottom:6px;${INSIGHT_STYLE[i.level] || ""}">
+       ${INSIGHT_ICON[i.level] || ""} ${esc(fmt(t("wl_" + i.key), i.args))}</div>`).join("");
+  // 今日
+  const t0 = d.today || { total: 0, first: "-", last: "-", span_hours: 0 };
+  $("#wl-today").innerHTML = [
+    `<div class="stat"><div class="ic c-blue">💬</div><b>${t0.total}</b><span>${esc(t("wl_msgs"))}</span></div>`,
+    `<div class="stat"><div class="ic c-cyan">🕐</div><b style="font-size:14px;padding-top:5px">${esc(t0.span_hours)}h</b><span>${esc(t("wl_span"))}</span></div>`,
+    `<div class="stat"><div class="ic c-green">▶</div><b style="font-size:14px;padding-top:5px">${esc(t0.first || "-")}</b><span>${esc(t("wl_first"))}</span></div>`,
+    `<div class="stat"><div class="ic c-orange">■</div><b style="font-size:14px;padding-top:5px">${esc(t0.last || "-")}</b><span>${esc(t("wl_last"))}</span></div>`,
+  ].join("");
+  // 24h 柱状图（div 高度，零依赖）
+  const hourly = t0.hourly || new Array(24).fill(0);
+  const mx = Math.max(1, ...hourly);
+  $("#wl-chart").innerHTML = `<div style="display:flex;align-items:flex-end;gap:2px;height:70px">
+    ${hourly.map((v, h) => `<div title="${h}:00 — ${v}" style="flex:1;height:${Math.max(2, v / mx * 66)}px;background:${v ? "var(--brand)" : "var(--bg)"};border-radius:2px 2px 0 0"></div>`).join("")}
+    </div><div style="display:flex;gap:2px;font-size:10px;color:#888;margin-top:2px">
+    ${hourly.map((_, h) => `<div style="flex:1;text-align:center">${h % 6 === 0 ? h : ""}</div>`).join("")}</div>`;
+  // 近 7 天
+  const wmax = Math.max(1, ...d.window.map(w => w.total));
+  $("#wl-week").innerHTML = d.window.map(w =>
+    `<div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:4px">
+      <span style="width:76px;color:#888">${esc(w.date.slice(5))}</span>
+      <div style="flex:1;height:12px;background:var(--bg);border-radius:6px;overflow:hidden">
+        <div style="height:100%;width:${w.total / wmax * 100}%;background:var(--brand);border-radius:6px"></div></div>
+      <span style="width:64px;text-align:right">${w.total} · ${w.span_hours}h</span></div>`).join("");
+}
+
 async function doExtract() {
   try {
     const d = await api("/api/extract", {confirm: $("#ex-confirm").checked});
