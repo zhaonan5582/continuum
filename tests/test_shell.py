@@ -53,6 +53,16 @@ class TestShellAPI(unittest.TestCase):
             html = r.read().decode("utf-8")
         self.assertIn("Continuum 软件壳", html)
 
+    def test_i18n_js_served(self):
+        """语言包必须可达（404 = 页面 I18N 未定义整页崩）。"""
+        with urllib.request.urlopen(self.base + "/i18n.js", timeout=10) as r:
+            js = r.read().decode("utf-8")
+        self.assertIn('"zh"', js)
+        self.assertIn('"ar"', js)
+        # 路径穿越防护：只允许精确 /i18n.js
+        with self.assertRaises(urllib.error.HTTPError):
+            urllib.request.urlopen(self.base + "/../i18n.js", timeout=10)
+
     def test_overview(self):
         d = self._get("/api/overview")
         self.assertIn("stats", d)

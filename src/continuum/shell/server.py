@@ -61,6 +61,11 @@ class ShellHandler(BaseHTTPRequestHandler):
             body = _STATIC_INDEX.read_bytes()
             self._send(200, body, "text/html; charset=utf-8")
             return
+        if path == "/i18n.js":
+            # 语言包（仅精确匹配此文件，不做任意路径服务——防目录穿越）
+            body = (_STATIC_INDEX.parent / "i18n.js").read_bytes()
+            self._send(200, body, "application/javascript; charset=utf-8")
+            return
         try:
             with _LOCK:
                 if path == "/api/overview":
