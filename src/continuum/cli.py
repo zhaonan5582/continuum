@@ -14,6 +14,7 @@
 - backup           备份记忆库
 - feed             喂食器：主动扫描会话文件增量入库（--once / --watch）
 - agents           探测本机 agent 与可用接入机制（只读视图）
+- setup            一键安装：探测 + 自动接入全部已安装 agent
 """
 
 from __future__ import annotations
@@ -293,6 +294,33 @@ def cmd_agents(args) -> int:
     return 0
 
 
+def cmd_setup(args) -> int:
+    """一键安装（docs/10 目标形态）：探测 → 自动接入全部发现的宿主 → 报告。
+
+    - 默认全自动无交互；--dry-run 只报告不改动
+    - 只增不改（只写 continuum 条目）+ 写前备份 + 幂等
+    """
+    from continuum.setup import run_setup
+
+    LABEL = {"created": "[+] 新建", "updated": "[+] 写入", "exists": "[=] 已存在",
+             "skipped": "[-] 跳过", "error": "[!] 失败", "manual": "[?] 需手动"}
+    actions, notes = run_setup(args.db, dry_run=args.dry_run)
+    print("continuum setup —— 接入本机全部已安装的 agent")
+    print()
+    if not actions:
+        print("  未发现任何已知宿主（可运行 continuum agents 查看探测详情）")
+        return 0
+    for a in actions:
+        tag = LABEL.get(a.status, a.status)
+        print("  {} {:<16} {}".format(tag, a.host, a.detail))
+    print()
+    for m in notes:
+        print("  提示: " + m)
+    print()
+    print("下一步：重启对应宿主使其加载 MCP 配置；壳/服务常驻即可自动采集会话。")
+    return 0
+
+
 def cmd_feed(args) -> int:
     """喂食器 CLI（真喂食的第三种触达形态）：
     --once（默认）：扫一次退出——供系统计划任务/手动调用（无常驻进程）。
@@ -513,6 +541,12 @@ def build_parser() -> argparse.ArgumentParser:
                     help="注册登录自启（后台常驻，无需再开命令行窗口）")
     sh.add_argument("--uninstall-autostart", action="store_true", help="移除登录自启")
     sh.set_defaults(func=cmd_shell)
+
+    su = sub.add_parser("setup", help="一键安装：探测并自动接入本机全部已安装 agent")
+    su.add_argument("--db", default=argparse.SUPPRESS,
+                    help="记忆库路径（也可放子命令前：continuum --db X setup）")
+    su.add_argument("--dry-run", action="store_true", help="只报告不改动")
+    su.set_defaults(func=cmd_setup)
 
     ag = sub.add_parser("agents", help="探测本机 agent 与可用接入机制（只读）")
     ag.set_defaults(func=cmd_agents)

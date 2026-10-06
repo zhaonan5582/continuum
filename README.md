@@ -55,6 +55,18 @@ continuum shell --uninstall-autostart  # 取消自启
 
 注册后每次登录自动在后台运行，浏览器直接访问 <http://127.0.0.1:8501> 即可。
 
+### 一键安装（推荐）
+
+```bash
+pip install continuum-core        # 或克隆本仓库后 pip install .
+continuum setup                   # 探测本机 agent + 自动接入全部（零交互）
+```
+
+`continuum setup` 会自动完成：**探测**本机所有已安装的 AI coding agent →
+**自动接入**全部（写 MCP 配置，只增不改 + 写前备份 + 幂等）→ 注册后台常驻 →
+输出一页现状与待办。想先预览不改动：`continuum setup --dry-run`；
+只看探测结果：`continuum agents`。
+
 ### 保持喂食（会话内容持续入库）
 
 Continuum 的「喂食器」主动扫描宿主会话文件并增量入库——**独立节奏，不依赖任何工具调用**：

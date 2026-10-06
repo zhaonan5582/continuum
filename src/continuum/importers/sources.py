@@ -25,6 +25,40 @@ from continuum.udf import UDFMessage, UDFMeta
 _MAX_BYTES = 10_000_000
 
 
+# ---------- 宿主注入过滤（2026-10-07 N2 实测：CC 的权限提示被当成 user 消息混入） ----------
+
+_INJECT_PREFIXES: tuple[str, ...] = (
+    "Permission to use",                 # CC 工具权限提示（don't ask mode）
+    "Caveat: The messages below",
+    "<command-name>", "<command-message>", "<local-command-stdout>",
+    "<system-reminder>", "[Request interrupted by user",
+    "API Error:", "Invalid API key",
+    "Your task is to",                   # 元任务注入（如 codebuddy 的审稿 prompt 模板）
+)
+
+_INJECT_BLOCK_RE = None
+
+
+def _is_host_injection(text: str) -> bool:
+    """整条是否为宿主注入（非用户/助手话语）——按已知前缀判定（宁漏勿错）。"""
+    t = text.lstrip()
+    if not t:
+        return True
+    for p in _INJECT_PREFIXES:
+        if t.startswith(p):
+            return True
+    return False
+
+
+def _strip_inject_blocks(text: str) -> str:
+    """剔除文本内的宿主注入块（system-reminder 等），保留正文。"""
+    global _INJECT_BLOCK_RE
+    if _INJECT_BLOCK_RE is None:
+        import re
+        _INJECT_BLOCK_RE = re.compile(r"<system-reminder[\s\S]*?</system-reminder>")
+    return _INJECT_BLOCK_RE.sub("", text)
+
+
 # ---------- 通用工具（各 Source 共用） ----------
 
 def _blocks_to_text(content) -> str:
@@ -173,6 +207,11 @@ class GenericJsonlSource:
             if not got:
                 continue
             role, text = got
+            if _is_host_injection(text):
+                continue          # 宿主注入（权限提示/元任务模板）不入库
+            text = _strip_inject_blocks(text)
+            if not text.strip():
+                continue
             if len(text.encode("utf-8", errors="replace")) > self.max_content_bytes():
                 continue
             ts = _ts_of(d) or datetime.now(timezone.utc).strftime(
