@@ -93,6 +93,7 @@ const I18N = {
 "empty_redlines":"暂无红线——录入后拦截引擎将据此工作",
 "empty_recall":"无命中——换个关键词试试",
 "lic_ok":"激活成功",
+"lic_plan_free":"免费版","lic_plan_pro":"本地 Pro","lic_plan_cloud":"本地 Pro + 云","feat_cross_host":"跨宿主汇聚","feat_cloud_judge":"托管判决网关","feat_cloud_sync":"云同步备份","feat_unlocked":"已解锁","feat_locked":"未解锁","lic_features_title":"功能解锁状态","o_plan_pro":"本地 Pro","o_plan_cloud":"本地 Pro + 云",
 "lic_no":"未激活",
 "t_pattern":"匹配模式",
 "t_kind":"类型",
@@ -102,7 +103,11 @@ const I18N = {
 "act_warn":"警告",
 "act_ask":"询问"},
 
-"zh-TW": {"running":"服務運行中",
+"zh-TW": {
+"feat_cross_host":"跨宿主彙聚","feat_cloud_judge":"託管判決閘道","feat_cloud_sync":"雲同步備份",
+"feat_unlocked":"已解鎖","feat_locked":"未解鎖","lic_features_title":"功能解鎖狀態",
+"lic_plan_free":"免費版","lic_plan_pro":"Local Pro","lic_plan_cloud":"Local Pro + Cloud",
+"o_plan_pro":"Local Pro","o_plan_cloud":"Local Pro + Cloud","running":"服務運行中",
 "nav_overview":"總覽",
 "nav_persona":"人格",
 "nav_redlines":"紅線",
@@ -293,6 +298,7 @@ const I18N = {
 "empty_redlines":"No redlines yet",
 "empty_recall":"No match - try other keywords",
 "lic_ok":"Activated",
+"lic_plan_free":"Free","lic_plan_pro":"Local Pro","lic_plan_cloud":"Local Pro + Cloud","feat_cross_host":"Cross-host aggregation","feat_cloud_judge":"Hosted judgment gateway","feat_cloud_sync":"Cloud sync & backup","feat_unlocked":"Unlocked","feat_locked":"Locked","lic_features_title":"Feature unlock status","o_plan_pro":"Local Pro","o_plan_cloud":"Local Pro + Cloud",
 "lic_no":"Not activated",
 "t_pattern":"Pattern",
 "t_kind":"Kind",
@@ -302,7 +308,9 @@ const I18N = {
 "act_warn":"Warn",
 "act_ask":"Ask"},
 
-"ja": {"running":"サービス実行中",
+"ja": {
+"lic_plan_free":"無料版","lic_plan_pro":"Local Pro","lic_plan_cloud":"Local Pro + Cloud","o_plan_pro":"Local Pro","o_plan_cloud":"Local Pro + Cloud",
+"feat_cross_host":"Cross-host","feat_cloud_judge":"Judgment gateway","feat_cloud_sync":"Cloud sync","feat_unlocked":"Unlocked","feat_locked":"Locked","lic_features_title":"Features","running":"サービス実行中",
 "nav_overview":"概要",
 "nav_persona":"ペルソナ",
 "nav_redlines":"赤線",
@@ -402,7 +410,9 @@ const I18N = {
 "act_warn":"警告",
 "act_ask":"確認"},
 
-"ko": {"running":"서비스 실행 중",
+"ko": {
+"lic_plan_free":"무료","lic_plan_pro":"Local Pro","lic_plan_cloud":"Local Pro + Cloud","o_plan_pro":"Local Pro","o_plan_cloud":"Local Pro + Cloud",
+"feat_cross_host":"Cross-host","feat_cloud_judge":"Judgment gateway","feat_cloud_sync":"Cloud sync","feat_unlocked":"Unlocked","feat_locked":"Locked","lic_features_title":"Features","running":"서비스 실행 중",
 "nav_overview":"개요",
 "nav_persona":"페르소나",
 "nav_redlines":"레드라인",
@@ -502,7 +512,9 @@ const I18N = {
 "act_warn":"경고",
 "act_ask":"확인"},
 
-"es": {"running":"Servicio en ejecución",
+"es": {
+"lic_plan_free":"Gratis","lic_plan_pro":"Local Pro","lic_plan_cloud":"Local Pro + Cloud","o_plan_pro":"Local Pro","o_plan_cloud":"Local Pro + Cloud",
+"feat_cross_host":"Cross-host","feat_cloud_judge":"Judgment gateway","feat_cloud_sync":"Cloud sync","feat_unlocked":"Unlocked","feat_locked":"Locked","lic_features_title":"Features","running":"Servicio en ejecución",
 "nav_overview":"Resumen",
 "nav_persona":"Persona",
 "nav_redlines":"Líneas rojas",
@@ -602,7 +614,9 @@ const I18N = {
 "act_warn":"Advertir",
 "act_ask":"Preguntar"},
 
-"fr": {"running":"Service en cours",
+"fr": {
+"lic_plan_free":"Gratuit","lic_plan_pro":"Local Pro","lic_plan_cloud":"Local Pro + Cloud","o_plan_pro":"Local Pro","o_plan_cloud":"Local Pro + Cloud",
+"feat_cross_host":"Cross-host","feat_cloud_judge":"Judgment gateway","feat_cloud_sync":"Cloud sync","feat_unlocked":"Unlocked","feat_locked":"Locked","lic_features_title":"Features","running":"Service en cours",
 "nav_overview":"Aperçu",
 "nav_persona":"Persona",
 "nav_redlines":"Lignes rouges",
@@ -702,7 +716,9 @@ const I18N = {
 "act_warn":"Avertir",
 "act_ask":"Demander"},
 
-"de": {"running":"Dienst läuft",
+"de": {
+"lic_plan_free":"Kostenlos","lic_plan_pro":"Local Pro","lic_plan_cloud":"Local Pro + Cloud","o_plan_pro":"Local Pro","o_plan_cloud":"Local Pro + Cloud",
+"feat_cross_host":"Cross-host","feat_cloud_judge":"Judgment gateway","feat_cloud_sync":"Cloud sync","feat_unlocked":"Unlocked","feat_locked":"Locked","lic_features_title":"Features","running":"Dienst läuft",
 "nav_overview":"Übersicht",
 "nav_persona":"Persona",
 "nav_redlines":"Rote Linien",
@@ -802,7 +818,9 @@ const I18N = {
 "act_warn":"Warnen",
 "act_ask":"Fragen"},
 
-"pt": {"running":"Serviço em execução",
+"pt": {
+"lic_plan_free":"Grátis","lic_plan_pro":"Local Pro","lic_plan_cloud":"Local Pro + Cloud","o_plan_pro":"Local Pro","o_plan_cloud":"Local Pro + Cloud",
+"feat_cross_host":"Cross-host","feat_cloud_judge":"Judgment gateway","feat_cloud_sync":"Cloud sync","feat_unlocked":"Unlocked","feat_locked":"Locked","lic_features_title":"Features","running":"Serviço em execução",
 "nav_overview":"Visão geral",
 "nav_persona":"Persona",
 "nav_redlines":"Linhas vermelhas",
@@ -902,7 +920,9 @@ const I18N = {
 "act_warn":"Avisar",
 "act_ask":"Perguntar"},
 
-"ru": {"running":"Сервис работает",
+"ru": {
+"lic_plan_free":"Бесплатная","lic_plan_pro":"Local Pro","lic_plan_cloud":"Local Pro + Cloud","o_plan_pro":"Local Pro","o_plan_cloud":"Local Pro + Cloud",
+"feat_cross_host":"Cross-host","feat_cloud_judge":"Judgment gateway","feat_cloud_sync":"Cloud sync","feat_unlocked":"Unlocked","feat_locked":"Locked","lic_features_title":"Features","running":"Сервис работает",
 "nav_overview":"Обзор",
 "nav_persona":"Персона",
 "nav_redlines":"Красные линии",
@@ -1002,7 +1022,9 @@ const I18N = {
 "act_warn":"Предупредить",
 "act_ask":"Спросить"},
 
-"it": {"running":"Servizio in esecuzione",
+"it": {
+"lic_plan_free":"Gratuito","lic_plan_pro":"Local Pro","lic_plan_cloud":"Local Pro + Cloud","o_plan_pro":"Local Pro","o_plan_cloud":"Local Pro + Cloud",
+"feat_cross_host":"Cross-host","feat_cloud_judge":"Judgment gateway","feat_cloud_sync":"Cloud sync","feat_unlocked":"Unlocked","feat_locked":"Locked","lic_features_title":"Features","running":"Servizio in esecuzione",
 "nav_overview":"Panoramica",
 "nav_persona":"Persona",
 "nav_redlines":"Linee rosse",
@@ -1102,7 +1124,9 @@ const I18N = {
 "act_warn":"Avvisa",
 "act_ask":"Chiedi"},
 
-"tr": {"running":"Servis çalışıyor",
+"tr": {
+"lic_plan_free":"Ücretsiz","lic_plan_pro":"Local Pro","lic_plan_cloud":"Local Pro + Cloud","o_plan_pro":"Local Pro","o_plan_cloud":"Local Pro + Cloud",
+"feat_cross_host":"Cross-host","feat_cloud_judge":"Judgment gateway","feat_cloud_sync":"Cloud sync","feat_unlocked":"Unlocked","feat_locked":"Locked","lic_features_title":"Features","running":"Servis çalışıyor",
 "nav_overview":"Genel Bakış",
 "nav_persona":"Persona",
 "nav_redlines":"Kırmızı çizgiler",
@@ -1202,7 +1226,9 @@ const I18N = {
 "act_warn":"Uyar",
 "act_ask":"Sor"},
 
-"vi": {"running":"Dịch vụ đang chạy",
+"vi": {
+"lic_plan_free":"Miễn phí","lic_plan_pro":"Local Pro","lic_plan_cloud":"Local Pro + Cloud","o_plan_pro":"Local Pro","o_plan_cloud":"Local Pro + Cloud",
+"feat_cross_host":"Cross-host","feat_cloud_judge":"Judgment gateway","feat_cloud_sync":"Cloud sync","feat_unlocked":"Unlocked","feat_locked":"Locked","lic_features_title":"Features","running":"Dịch vụ đang chạy",
 "nav_overview":"Tổng quan",
 "nav_persona":"Nhân cách",
 "nav_redlines":"Đường đỏ",
@@ -1302,7 +1328,9 @@ const I18N = {
 "act_warn":"Cảnh báo",
 "act_ask":"Hỏi"},
 
-"id": {"running":"Layanan berjalan",
+"id": {
+"lic_plan_free":"Gratis","lic_plan_pro":"Local Pro","lic_plan_cloud":"Local Pro + Cloud","o_plan_pro":"Local Pro","o_plan_cloud":"Local Pro + Cloud",
+"feat_cross_host":"Cross-host","feat_cloud_judge":"Judgment gateway","feat_cloud_sync":"Cloud sync","feat_unlocked":"Unlocked","feat_locked":"Locked","lic_features_title":"Features","running":"Layanan berjalan",
 "nav_overview":"Ikhtisar",
 "nav_persona":"Persona",
 "nav_redlines":"Garis merah",
@@ -1402,7 +1430,9 @@ const I18N = {
 "act_warn":"Peringatkan",
 "act_ask":"Tanya"},
 
-"ar": {"running":"الخدمة تعمل",
+"ar": {
+"lic_plan_free":"مجاني","lic_plan_pro":"Local Pro","lic_plan_cloud":"Local Pro + Cloud","o_plan_pro":"Local Pro","o_plan_cloud":"Local Pro + Cloud",
+"feat_cross_host":"Cross-host","feat_cloud_judge":"Judgment gateway","feat_cloud_sync":"Cloud sync","feat_unlocked":"Unlocked","feat_locked":"Locked","lic_features_title":"Features","running":"الخدمة تعمل",
 "nav_overview":"نظرة عامة",
 "nav_persona":"الشخصية",
 "nav_redlines":"الخطوط الحمراء",
@@ -1502,7 +1532,9 @@ const I18N = {
 "act_warn":"تحذير",
 "act_ask":"سؤال"},
 
-"hi": {"running":"सेवा चल रही है",
+"hi": {
+"lic_plan_free":"मुफ़्त","lic_plan_pro":"Local Pro","lic_plan_cloud":"Local Pro + Cloud","o_plan_pro":"Local Pro","o_plan_cloud":"Local Pro + Cloud",
+"feat_cross_host":"Cross-host","feat_cloud_judge":"Judgment gateway","feat_cloud_sync":"Cloud sync","feat_unlocked":"Unlocked","feat_locked":"Locked","lic_features_title":"Features","running":"सेवा चल रही है",
 "nav_overview":"अवलोकन",
 "nav_persona":"व्यक्तित्व",
 "nav_redlines":"लाल रेखाएँ",

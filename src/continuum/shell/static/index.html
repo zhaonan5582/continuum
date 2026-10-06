@@ -243,8 +243,18 @@
   <!-- 授权 -->
   <section id="v-license">
     <div class="card"><h2><span class="ic">🔑</span><span data-i18n="h_license">授权</span></h2>
+      <div class="row" style="align-items:center;margin-bottom:10px">
+        <span class="tag off" id="lic-plan-badge" style="font-size:13px;padding:4px 14px">免费版</span>
+        <span class="muted" id="lic-key-info"></span>
+      </div>
       <div id="lic-state" class="muted"></div>
-      <div class="row" style="margin-top:10px">
+      <h2 style="margin-top:16px;font-size:13px"><span data-i18n="lic_features_title">功能解锁状态</span></h2>
+      <div class="stats" id="lic-features" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))"></div>
+      <div class="row" style="margin-top:14px">
+        <select id="lic-plan" style="flex:0 0 150px">
+          <option value="pro" data-i18n="o_plan_pro">本地 Pro</option>
+          <option value="pro_cloud" data-i18n="o_plan_cloud">本地 Pro + 云</option>
+        </select>
         <input type="text" id="lic-key" data-i18n-ph="ph_license">
         <button class="pri" style="flex:0 0 auto" onclick="activateLicense()"><span data-i18n="b_activate">激活</span></button>
       </div>
@@ -493,15 +503,40 @@ function ccCalc() {
   $("#cc-month").textContent = "$" + month.toFixed(2);
 }
 
+const PLAN_BADGE = {
+  free:   {cls: "off",  key: "lic_plan_free"},
+  pro:    {cls: "on",   key: "lic_plan_pro"},
+  pro_cloud: {cls: "on", key: "lic_plan_cloud"},
+};
+const FEATURE_META = [
+  ["cross_host",  "feat_cross_host",  "🌐"],
+  ["cloud_judge", "feat_cloud_judge", "⚖️"],
+  ["cloud_sync",  "feat_cloud_sync",  "☁️"],
+];
+function renderLicense(d) {
+  const plan = d.activated ? (d.plan || "pro") : "free";
+  const badge = PLAN_BADGE[plan] || PLAN_BADGE.free;
+  const badgeEl = $("#lic-plan-badge");
+  badgeEl.className = "tag " + badge.cls;
+  badgeEl.style.fontSize = "13px"; badgeEl.style.padding = "4px 14px";
+  badgeEl.textContent = t(badge.key);
+  $("#lic-key-info").innerHTML = d.activated
+    ? `<code>${esc(d.key_masked)}</code> <span class="muted">${esc((d.activated_at||"").slice(0,19))}</span>`
+    : "";
+  $("#lic-features").innerHTML = FEATURE_META.map(([feat, key, icon]) => {
+    const on = (d.features || []).includes(feat);
+    return `<div class="stat" style="${on ? "" : "opacity:.45"}">
+      <div class="ic ${on ? "c-green" : ""}">${on ? icon : "🔒"}</div>
+      <b style="font-size:13px">${t(key)}</b>
+      <span>${on ? t("feat_unlocked") : t("feat_locked")}</span></div>`;
+  }).join("");
+}
 async function loadLicense() {
-  const d = await api("/api/license");
-  $("#lic-state").innerHTML = d.activated
-    ? `<span class="tag on">${t("lic_ok")}</span> <code>${esc(d.key_masked)}</code> <span class="muted">${esc(d.plan||"")} · ${esc((d.activated_at||"").slice(0,19))}</span>`
-    : `<span class="tag off">${t("lic_no")}</span>`;
+  renderLicense(await api("/api/license"));
 }
 async function activateLicense() {
   try {
-    const d = await api("/api/license", {key: $("#lic-key").value});
+    const d = await api("/api/license", {key: $("#lic-key").value, plan: $("#lic-plan").value});
     msg(t("lic_ok") + " ✓", true); loadLicense();
   } catch (e) { msg(e.message, false); }
 }
