@@ -12,6 +12,7 @@
 - persona current  查看当前人格
 - import workbuddy 从 WorkBuddy jsonl 导入会话（P1 验收通道）
 - backup           备份记忆库
+- feed             喂食器：主动扫描会话文件增量入库（--once / --watch）
 """
 
 from __future__ import annotations
@@ -154,6 +155,8 @@ def cmd_serve(args) -> int:
         feed = WorkbuddyFeed.build_default(srv.be)
     except Exception:                   # pragma: no cover - 喂食器失败不影响 serve
         feed = None
+    if feed is not None:
+        feed.start_background(120.0)     # 真喂食：常驻期间每 2 分钟主动扫描（宪法 10）
     try:
         mcp = build_mcp_server(srv, feed=feed)
     except MCPNotInstalled as e:
@@ -189,9 +192,46 @@ def cmd_shell(args) -> int:
     from http.server import ThreadingHTTPServer  # noqa: F401 - 预检导入失败尽早暴露
 
     srv = _open_server(args.db)
+    try:                                 # 壳常驻期间也真喂食（与 serve 同款后台线程）
+        from continuum.importers.workbuddy_feed import WorkbuddyFeed
+        feed = WorkbuddyFeed.build_default(srv.be)
+        if feed is not None:
+            feed.start_background(120.0)
+    except Exception:                    # pragma: no cover - 喂食失败不影响壳
+        pass
     from continuum.shell.server import run_shell
 
     run_shell(srv, args.db, port=args.port, open_browser=not args.no_browser)
+    return 0
+
+
+def cmd_feed(args) -> int:
+    """喂食器 CLI（真喂食的第三种触达形态）：
+    --once（默认）：扫一次退出——供系统计划任务/手动调用（无常驻进程）。
+    --watch：常驻循环（Ctrl+C 退出）。
+    serve/shell 常驻时已自带后台喂食线程，本命令供二者都不开时的兜底。"""
+    import time as _time
+    from continuum.importers.workbuddy_feed import WorkbuddyFeed
+
+    be = _open_backend(args.db)
+    feed = WorkbuddyFeed.build_default(be)
+    if feed is None:
+        print("未找到会话目录 ~/.workbuddy/projects——无喂食对象")
+        be.close()
+        return 1
+    if args.watch:
+        feed.start_background(args.interval)
+        try:
+            while True:
+                _time.sleep(3600)
+        except KeyboardInterrupt:
+            feed.stop_background()
+            print("\n喂食器已停止。")
+    else:
+        r = feed.sweep_now()
+        print(f"扫描完成: 新入库 {r.new_messages} 条 / 文件 {r.files_scanned} 个 / "
+              f"老会话标记 {r.old_files_marked} / 幂等跳过 {r.skipped_dedup}")
+    be.close()
     return 0
 
 
@@ -377,6 +417,14 @@ def build_parser() -> argparse.ArgumentParser:
     sh.add_argument("--port", type=int, default=8501, help="监听端口（默认 8501，仅 127.0.0.1）")
     sh.add_argument("--no-browser", action="store_true", help="不自动打开浏览器")
     sh.set_defaults(func=cmd_shell)
+
+    fd = sub.add_parser("feed", help="喂食器：主动扫描宿主会话文件增量入库（真喂食）")
+    fd.add_argument("--db", default=argparse.SUPPRESS,
+                    help="记忆库路径（也可放子命令前：continuum --db X feed）")
+    fd.add_argument("--once", action="store_true", help="扫一次退出（默认；计划任务用）")
+    fd.add_argument("--watch", action="store_true", help="常驻循环扫描（Ctrl+C 退出）")
+    fd.add_argument("--interval", type=float, default=120.0, help="--watch 间隔秒（默认 120）")
+    fd.set_defaults(func=cmd_feed)
 
     gt = sub.add_parser("guard-test", help="执行红线正反测试集（防误伤回归）")
     gt.set_defaults(func=cmd_guard_test)

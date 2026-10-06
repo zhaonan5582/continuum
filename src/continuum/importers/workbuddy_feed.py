@@ -18,7 +18,9 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
+import threading
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -33,7 +35,8 @@ from continuum.storage.backend import StorageBackend
 from continuum.udf import UDFMessage, UDFMeta
 
 DEFAULT_PROJECTS_DIR = Path.home() / ".workbuddy" / "projects"
-DEFAULT_STATE_PATH = Path.home() / ".continuum" / "feed_state.json"
+DEFAULT_STATE_PATH = Path(os.environ.get(
+    "CONTINUUM_FEED_STATE") or (Path.home() / ".continuum" / "feed_state.json"))
 HOST = "workbuddy"
 _MAX_CONTENT_BYTES = 10_000_000  # 与导入器同款防御（探针24）
 
@@ -59,6 +62,8 @@ class WorkbuddyFeed:
     _calls_since_sweep: int = 0
     _last_sweep_ts: float = field(default_factory=time.time)
     _initialized_at: float = 0.0
+    _bg_thread: "threading.Thread | None" = None      # 后台喂食线程（start_background）
+    _stop_event: threading.Event = field(default_factory=threading.Event)
 
     def __post_init__(self):
         self._load_state()          # 只在构造时读一次；每轮 sweep 重读既浪费又会覆盖基准线
@@ -122,13 +127,51 @@ class WorkbuddyFeed:
         「最新」装配包之前先补增量，装配包才配得上"最新"。仍吞异常。
         成功后重置扳机节律（强制扫计入正常节律，避免紧随的 maybe_sweep 重复扫描）。"""
         try:
-            r = self._sweep("forced")
+            with self.backend.write_lock:      # 与工具调用/其他写路径共享锁（数据层统一）
+                r = self._sweep("forced")
             self._calls_since_sweep = 0
             self._last_sweep_ts = time.time()
             return r
         except Exception as e:  # noqa: BLE001
             print(f"[continuum-feed] 强制 sweep 失败（已忽略）: {e}", file=sys.stderr)
             return SweepResult(triggered=False, reason="error")
+
+    # ---- 真·喂食：独立节奏的后台线程（2026-10-06 楠哥拍板改造） ----
+    #
+    # 旧设计把喂食寄生于「宿主调用 continuum 工具」——那不是喂食，是搭便车：
+    # 宿主整场会话不调工具 = 一条不落库（本会话 40+ 小时零落库的实测事故）。
+    # 宪法 10 要求机制扳机不依赖任何一方自觉——正确形态是**进程自身时钟驱动**：
+    # serve（MCP 常驻）/ shell（壳常驻）各自起一个 daemon 线程按固定间隔主动扫描，
+    # 零新增进程、不依赖宿主行为。
+
+    def start_background(self, interval_sec: float = 120.0) -> threading.Thread:
+        """启动后台喂食线程（daemon，随进程退出）。返回线程对象（测试可 join）。"""
+        if self._bg_thread is not None and self._bg_thread.is_alive():
+            return self._bg_thread
+        self._stop_event.clear()
+
+        def _loop() -> None:
+            while not self._stop_event.is_set():
+                try:
+                    self.sweep_now()
+                except Exception:          # pragma: no cover - 双重保险
+                    pass
+                self._stop_event.wait(interval_sec)   # 可被 stop 立即唤醒
+
+        t = threading.Thread(target=_loop, name="continuum-feed", daemon=True)
+        t.start()
+        self._bg_thread = t
+        print(f"[continuum-feed] 后台喂食已启动（每 {interval_sec:.0f}s 主动扫描）",
+              file=sys.stderr)
+        return t
+
+    def stop_background(self) -> None:
+        """停止后台喂食线程（幂等）。"""
+        self._stop_event.set()
+        t = self._bg_thread
+        if t is not None and t.is_alive():
+            t.join(timeout=5)
+        self._bg_thread = None
 
     def _sweep(self, reason: str) -> SweepResult:
         result = SweepResult(triggered=True, reason=reason)

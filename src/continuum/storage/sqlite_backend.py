@@ -7,6 +7,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
+import threading
 from pathlib import Path
 from typing import Iterator
 
@@ -33,6 +34,12 @@ class SQLiteBackend(StorageBackend):
         self.conn.execute("PRAGMA foreign_keys = ON")
         self.conn.execute("PRAGMA journal_mode = WAL")
         self.conn.execute("PRAGMA synchronous = NORMAL")
+        # 多进程并发写等待（喂食线程 + 壳 + CLI 可能同时写同一库）：
+        # 拿不到写锁时最多等 5 秒而非立刻 database is locked（2026-10-06 真喂食改造）
+        self.conn.execute("PRAGMA busy_timeout = 5000")
+        # 进程内写串行化（RLock 可重入：append→audit 等嵌套调用安全）——
+        # 喂食后台线程与工具调用线程共享同一把锁，杜绝写事务交错
+        self.write_lock = threading.RLock()
         self.migrate()
 
     # ---- migration ----
@@ -81,6 +88,12 @@ class SQLiteBackend(StorageBackend):
             if errs:
                 raise ValueError(f"第 {i} 条 UDF 校验失败，整批拒绝: {'; '.join(errs)}")
 
+        accepted: list[int] = []
+        skipped = 0
+        with self.write_lock:
+            return self._append_locked(session_id, messages)
+
+    def _append_locked(self, session_id: int, messages: list[UDFMessage]) -> tuple[list[int], int]:
         accepted: list[int] = []
         skipped = 0
         try:
@@ -291,6 +304,12 @@ class SQLiteBackend(StorageBackend):
         if source_message_id is None:
             raise ValueError("source_message_id 缺失——无来源指针的记忆不许写入（宪法 2）")
         ts = now_iso()
+        with self.write_lock:
+            return self._insert_memory(kind, statement.strip(), source_message_id, session_id,
+                                       stated_by, evidence_level, ts, valid_until, status)
+
+    def _insert_memory(self, kind, statement, source_message_id, session_id, stated_by,
+                       evidence_level, ts, valid_until, status) -> int:
         cur = self.conn.execute(
             "INSERT INTO memories"
             " (kind, statement, source_message_id, session_id, stated_by, evidence_level,"
