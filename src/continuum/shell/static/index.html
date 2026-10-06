@@ -6,69 +6,130 @@
 <title>Continuum 软件壳</title>
 <style>
   :root {
-    --brand: #2563eb; --brand-weak: #dbeafe; --bg: #f5f7fa; --card: #ffffff;
-    --text: #1e293b; --muted: #64748b; --line: #e2e8f0;
-    --ok: #16a34a; --warn: #d97706; --bad: #dc2626; --radius: 12px;
+    --brand: #2563eb; --brand-weak: #eff6ff; --bg: #f1f5f9; --card: #ffffff;
+    --text: #0f172a; --muted: #64748b; --line: #e2e8f0;
+    --ok: #16a34a; --warn: #d97706; --bad: #dc2626; --radius: 14px;
+    --shadow: 0 1px 2px rgba(15,23,42,.05), 0 6px 20px rgba(15,23,42,.06);
+    --shadow-hover: 0 2px 6px rgba(15,23,42,.08), 0 12px 32px rgba(15,23,42,.10);
   }
   * { box-sizing: border-box; margin: 0; }
-  body { background: var(--bg); color: var(--text);
-         font: 14px/1.6 "Segoe UI", "Microsoft YaHei", sans-serif; }
-  header { position: sticky; top: 0; z-index: 10; background: var(--card);
-           border-bottom: 1px solid var(--line); padding: 14px 24px;
-           display: flex; align-items: center; gap: 18px; }
-  header h1 { font-size: 17px; color: var(--brand); }
-  header .sub { color: var(--muted); font-size: 12px; }
-  nav { margin-left: auto; display: flex; gap: 6px; }
-  nav a { text-decoration: none; padding: 7px 14px; border-radius: 8px;
-          font-size: 13px; color: var(--muted); }
-  nav a:hover { background: var(--brand-weak); color: var(--brand); }
-  main { max-width: 1400px; margin: 22px auto; padding: 0 24px;
-         display: grid; grid-template-columns: 6fr 5fr; gap: 18px;
-         align-items: start; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 6px; border: 2px solid var(--bg); }
+  ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  body { background: linear-gradient(180deg, #eef2f7 0%, #f5f7fa 320px);
+         color: var(--text); font: 14px/1.65 "Segoe UI", "Microsoft YaHei", sans-serif;
+         -webkit-font-smoothing: antialiased; }
+
+  /* ---- 顶栏：品牌深色 ---- */
+  header { position: sticky; top: 0; z-index: 10; color: #fff; padding: 14px 28px;
+           display: flex; align-items: center; gap: 16px;
+           background: linear-gradient(90deg, #0f172a 0%, #1e293b 55%, #1d3a8a 100%);
+           box-shadow: 0 2px 14px rgba(15,23,42,.25); }
+  .logo { width: 38px; height: 38px; border-radius: 11px; display: flex; align-items: center;
+          justify-content: center; font-size: 20px;
+          background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+          box-shadow: 0 4px 14px rgba(59,130,246,.45); }
+  .brand-txt b { font-size: 18px; letter-spacing: .3px; }
+  .brand-txt .sub { color: #94a3b8; font-size: 12px; }
+  .run-badge { display: flex; align-items: center; gap: 7px; font-size: 12px; color: #86efac;
+               background: rgba(22,163,74,.15); border: 1px solid rgba(22,163,74,.35);
+               padding: 4px 12px; border-radius: 999px; }
+  .run-badge i { width: 8px; height: 8px; border-radius: 50%; background: #22c55e;
+                 box-shadow: 0 0 8px #22c55e; animation: pulse 2s infinite; }
+  @keyframes pulse { 50% { opacity: .45; } }
+  nav { margin-left: auto; display: flex; gap: 4px; }
+  nav a { text-decoration: none; padding: 7px 15px; border-radius: 9px; font-size: 13px;
+          color: #cbd5e1; transition: .15s; }
+  nav a:hover { color: #fff; background: rgba(255,255,255,.09); }
+
+  /* ---- 布局 ---- */
+  main { max-width: 1400px; margin: 24px auto; padding: 0 24px;
+         display: grid; grid-template-columns: 6fr 5fr; gap: 20px; align-items: start; }
   #msg { grid-column: 1 / -1; }
   .col { display: flex; flex-direction: column; min-width: 0; }
-  section { scroll-margin-top: 70px; }
-  .card { background: var(--card); border-radius: var(--radius);
-          box-shadow: 0 1px 3px rgba(15,23,42,.06), 0 4px 14px rgba(15,23,42,.04);
-          padding: 18px 20px; margin-bottom: 16px; }
-  .card h2 { font-size: 15px; margin-bottom: 12px; color: var(--text); }
-  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px,1fr)); gap: 10px; }
-  .stat { background: var(--bg); border-radius: 10px; padding: 12px 14px; }
-  .stat b { display: block; font-size: 22px; color: var(--brand); }
+  section { scroll-margin-top: 78px; }
+
+  /* ---- 卡片 ---- */
+  .card { background: var(--card); border: 1px solid rgba(226,232,240,.8);
+          border-radius: var(--radius); box-shadow: var(--shadow);
+          padding: 20px 22px; margin-bottom: 20px; transition: box-shadow .18s; }
+  .card:hover { box-shadow: var(--shadow-hover); }
+  .card h2 { font-size: 14px; font-weight: 600; margin-bottom: 14px; letter-spacing: .2px;
+             display: flex; align-items: center; gap: 8px; }
+  .card h2 .ic { width: 26px; height: 26px; border-radius: 8px; display: inline-flex;
+                 align-items: center; justify-content: center; font-size: 14px;
+                 background: var(--brand-weak); }
+
+  /* ---- 统计卡 ---- */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px,1fr)); gap: 10px; }
+  .stat { border-radius: 12px; padding: 14px 14px 12px; background: var(--card);
+          border: 1px solid var(--line); transition: .15s; }
+  .stat:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+  .stat .ic { width: 30px; height: 30px; border-radius: 9px; display: flex;
+              align-items: center; justify-content: center; font-size: 15px; margin-bottom: 8px; }
+  .stat b { display: block; font-size: 24px; font-variant-numeric: tabular-nums; letter-spacing: -.5px; }
   .stat span { color: var(--muted); font-size: 12px; }
+  .ic.c-blue  { background: #dbeafe; } .ic.c-green{ background: #dcfce7; }
+  .ic.c-purple{ background: #ede9fe; } .ic.c-orange{ background: #ffedd5; }
+  .ic.c-red   { background: #fee2e2; } .ic.c-cyan  { background: #cffafe; }
+
+  /* ---- 表格 ---- */
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); }
-  th { color: var(--muted); font-weight: 500; }
+  th { text-align: left; padding: 8px 10px; color: var(--muted); font-weight: 500;
+       font-size: 12px; background: var(--bg); }
+  th:first-child { border-radius: 8px 0 0 8px; } th:last-child { border-radius: 0 8px 8px 0; }
+  td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; }
+  tbody tr { transition: background .12s; }
+  tbody tr:hover { background: #f8fafc; }
+  code { font-family: Consolas, monospace; font-size: 12px; background: var(--bg);
+         padding: 2px 6px; border-radius: 6px; color: #475569; word-break: break-all; }
+
+  /* ---- 表单 ---- */
   input[type=text], textarea, select, input[type=number] {
-    width: 100%; border: 1px solid var(--line); border-radius: 8px;
-    padding: 8px 10px; font: inherit; background: #fff; }
-  textarea { min-height: 84px; resize: vertical; }
-  button.pri { background: var(--brand); color: #fff; border: none; border-radius: 8px;
-               padding: 8px 18px; cursor: pointer; font-size: 14px; }
-  button.pri:hover { filter: brightness(1.08); }
-  button.mini { border: 1px solid var(--line); background: #fff; border-radius: 7px;
-                padding: 4px 10px; cursor: pointer; font-size: 12px; }
+    width: 100%; border: 1px solid var(--line); border-radius: 9px;
+    padding: 9px 12px; font: inherit; background: #fff; transition: .15s; }
+  input:focus, textarea:focus, select:focus {
+    outline: none; border-color: var(--brand);
+    box-shadow: 0 0 0 3px rgba(37,99,235,.13); }
+  textarea { min-height: 88px; resize: vertical; }
+  button.pri { background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff;
+               border: none; border-radius: 9px; padding: 9px 20px; cursor: pointer;
+               font-size: 14px; font-weight: 500;
+               box-shadow: 0 2px 8px rgba(37,99,235,.35); transition: .15s; }
+  button.pri:hover { filter: brightness(1.1); box-shadow: 0 4px 14px rgba(37,99,235,.45); }
+  button.pri:active { transform: translateY(1px); }
+  button.mini { border: 1px solid var(--line); background: #fff; border-radius: 8px;
+                padding: 4px 12px; cursor: pointer; font-size: 12px; transition: .12s; }
+  button.mini:hover { border-color: var(--brand); color: var(--brand); }
+
   .row { display: flex; gap: 10px; align-items: flex-start; }
   .row > * { flex: 1; }
   .muted { color: var(--muted); font-size: 12px; }
-  .tag { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; }
+  .tag { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 500; }
   .tag.block { background: #fee2e2; color: var(--bad); }
   .tag.warn { background: #fef3c7; color: var(--warn); }
   .tag.ask  { background: #e0e7ff; color: var(--brand); }
   .tag.on   { background: #dcfce7; color: var(--ok); }
   .tag.off  { background: var(--line); color: var(--muted); }
-  pre { background: var(--bg); border-radius: 10px; padding: 12px; overflow: auto;
-        font-size: 12px; white-space: pre-wrap; word-break: break-all; }
-  .msg { padding: 8px 12px; border-radius: 8px; margin: 0 0 12px; font-size: 13px; display: none; }
-  .msg.ok { background: #dcfce7; color: var(--ok); display: block; }
-  .msg.bad { background: #fee2e2; color: var(--bad); display: block; }
+  pre { background: #f8fafc; border: 1px solid var(--line); border-radius: 10px;
+        padding: 12px; overflow: auto; font-size: 12px;
+        white-space: pre-wrap; word-break: break-all; }
+  .msg { padding: 10px 14px; border-radius: 10px; margin: 0 0 4px; font-size: 13px;
+         display: none; box-shadow: var(--shadow); }
+  .msg.ok { background: #f0fdf4; color: var(--ok); border: 1px solid #bbf7d0; display: block; }
+  .msg.bad { background: #fef2f2; color: var(--bad); border: 1px solid #fecaca; display: block; }
+  .empty { text-align: center; padding: 26px 10px; color: var(--muted); }
+  .empty .big { font-size: 30px; margin-bottom: 6px; }
+
   @media (max-width: 1080px) { main { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
 <header>
-  <h1>Continuum</h1>
-  <span class="sub">跨 agent 持久记忆与连续人格层 · <span id="dbpath"></span></span>
+  <div class="logo">🧠</div>
+  <div class="brand-txt"><b>Continuum</b>
+    <div class="sub">跨 agent 持久记忆与连续人格层 · <span id="dbpath"></span></div></div>
+  <span class="run-badge"><i></i>服务运行中</span>
   <nav>
     <a href="#v-overview">总览</a>
     <a href="#v-persona">人格</a>
@@ -83,14 +144,15 @@
   <div class="col">
   <!-- 总览 -->
   <section id="v-overview">
-    <div class="card"><h2>库内统计</h2><div class="stats" id="stats"></div>
-      <p class="muted" style="margin-top:10px" id="ov-hint"></p></div>
-    <div class="card"><h2>会话（各自独立，消息不混合）</h2>
+    <div class="card"><h2><span class="ic">📊</span>库内统计</h2>
+      <div class="stats" id="stats"></div>
+      <p class="muted" style="margin-top:12px" id="ov-hint"></p></div>
+    <div class="card"><h2><span class="ic">💬</span>会话 <span class="muted">（各自独立，消息不混合）</span></h2>
       <table id="sess"><thead><tr><th>#</th><th>会话</th><th>项目</th><th>消息数</th><th>标题</th></tr></thead><tbody></tbody></table>
     </div>
-    <div class="card"><h2>沉淀（跨会话扫描 → 结构化记忆）</h2>
+    <div class="card"><h2><span class="ic">⚙️</span>沉淀 <span class="muted">（跨会话扫描 → 结构化记忆）</span></h2>
       <div class="row">
-        <label style="flex:0 0 auto;display:flex;align-items:center;gap:6px">
+        <label style="flex:0 0 auto;display:flex;align-items:center;gap:6px;cursor:pointer">
           <input type="checkbox" id="ex-confirm" checked> 直接置为 active（勾选=人工确认）</label>
         <button class="pri" style="flex:0 0 auto" onclick="doExtract()">立即沉淀</button>
       </div>
@@ -100,19 +162,19 @@
 
   <!-- 红线 -->
   <section id="v-redlines">
-    <div class="card"><h2>红线列表</h2>
+    <div class="card"><h2><span class="ic">🛡️</span>红线列表</h2>
       <table id="rl-tab"><thead><tr><th>#</th><th>状态</th><th>动作</th><th>范围</th><th>陈述</th><th>pattern</th><th>用例</th><th></th></tr></thead><tbody></tbody></table>
-      <div style="margin-top:10px"><button class="mini" onclick="runGuardTest()">▶ 执行正反测试集（防误伤回归）</button></div>
+      <div style="margin-top:12px"><button class="mini" onclick="runGuardTest()">▶ 执行正反测试集（防误伤回归）</button></div>
       <pre id="gt-out" class="hide"></pre></div>
-    <div class="card"><h2>录入红线</h2>
+    <div class="card"><h2><span class="ic">➕</span>录入红线</h2>
       <div class="row"><input type="text" id="rl-pattern" placeholder="pattern（正则优先，写动作短语如：删除.*参照站；非法正则回退子串）">
         <select id="rl-action" style="flex:0 0 110px"><option>block</option><option>warn</option><option>ask</option></select></div>
       <div class="row" style="margin-top:8px"><input type="text" id="rl-stmt" placeholder="红线陈述（逐字存储，禁止改写）">
         <input type="text" id="rl-scope" placeholder="scope（global）" style="flex:0 0 160px">
         <button class="pri" style="flex:0 0 auto" onclick="addRedline()">录入</button></div></div>
-    <div class="card"><h2>补正反用例（防误伤）</h2>
+    <div class="card"><h2><span class="ic">🧪</span>补正反用例（防误伤）</h2>
       <div class="row"><input type="number" id="rt-id" placeholder="红线 #id" style="flex:0 0 120px">
-        <select id="rt-case" style="flex:0 0 140px"><option value="positive">positive（该拦）</option><option value="negative">negative（不该拦）</option></select>
+        <select id="rt-case" style="flex:0 0 150px"><option value="positive">positive（该拦）</option><option value="negative">negative（不该拦）</option></select>
         <input type="text" id="rt-sample" placeholder="样例 target"></div>
       <div class="row" style="margin-top:8px"><span class="muted" style="flex:1">期望动作缺省：positive→block，negative→allow</span>
         <button class="pri" style="flex:0 0 auto" onclick="addRt()">录入用例</button></div></div>
@@ -122,27 +184,28 @@
   <div class="col">
   <!-- 人格 -->
   <section id="v-persona">
-    <div class="card"><h2>当前人格</h2><div id="persona-cur" class="muted">加载中…</div></div>
-    <div class="card"><h2>新建人格版本（覆盖式定版，历史可回溯）</h2>
+    <div class="card"><h2><span class="ic">🧠</span>当前人格</h2><div id="persona-cur" class="muted">加载中…</div></div>
+    <div class="card"><h2><span class="ic">✨</span>新建人格版本 <span class="muted">（覆盖式定版，历史可回溯）</span></h2>
       <textarea id="persona-text" placeholder="人格状态块：身份、语气、协作默契、硬规矩……"></textarea>
-      <div class="row" style="margin-top:8px">
+      <div class="row" style="margin-top:10px">
         <input type="text" id="persona-reason" placeholder="修改原因（必填，进版本审计）">
         <button class="pri" style="flex:0 0 auto" onclick="savePersona()">定版</button>
       </div></div>
-    <div class="card"><h2>追加 few-shot 样本（挂到当前版本）</h2>
+    <div class="card"><h2><span class="ic">🗨️</span>追加 few-shot 样本 <span class="muted">（挂到当前版本）</span></h2>
       <div class="row"><input type="text" id="ps-user" placeholder="用户说…"></div>
       <div class="row" style="margin-top:8px"><input type="text" id="ps-agent" placeholder="期望助手答…"></div>
       <div class="row" style="margin-top:8px">
         <input type="text" id="ps-tag" placeholder="标签（可选）">
         <button class="pri" style="flex:0 0 auto" onclick="addSample()">追加样本</button>
       </div>
-      <div id="ps-list" style="margin-top:10px"></div></div>
-    <div class="card"><h2>版本历史</h2><table id="pv-tab"><thead><tr><th>版本</th><th>原因</th><th>时间</th></tr></thead><tbody></tbody></table></div>
+      <div id="ps-list" style="margin-top:12px"></div></div>
+    <div class="card"><h2><span class="ic">🕘</span>版本历史</h2>
+      <table id="pv-tab"><thead><tr><th>版本</th><th>原因</th><th>时间</th></tr></thead><tbody></tbody></table></div>
   </section>
 
   <!-- 检索 -->
   <section id="v-recall">
-    <div class="card"><h2>记忆检索（跨会话，每条带证据等级与原文指针）</h2>
+    <div class="card"><h2><span class="ic">🔍</span>记忆检索 <span class="muted">（跨会话，每条带证据等级与原文指针）</span></h2>
       <div class="row"><input type="text" id="rc-q" placeholder="关键词，如：参照站 / 设备管理 / 粗集料检测" onkeydown="if(event.key==='Enter')doRecall()">
         <button class="pri" style="flex:0 0 auto" onclick="doRecall()">检索</button></div>
       <div id="rc-out" style="margin-top:12px"></div></div>
@@ -150,7 +213,7 @@
 
   <!-- 体检 -->
   <section id="v-doctor">
-    <div class="card"><h2>一键体检（配置 / 记忆库 / server 握手 / 生效指引）</h2>
+    <div class="card"><h2><span class="ic">🩺</span>一键体检 <span class="muted">（配置 / 记忆库 / server 握手 / 生效指引）</span></h2>
       <button class="pri" onclick="runDoctor()">运行体检</button>
       <pre id="dt-out" class="hide"></pre></div>
   </section>
@@ -169,17 +232,26 @@ async function api(path, body) {
   return d;
 }
 
+const STAT_META = [
+  ["sessions",         "会话",           "💬", "c-blue"],
+  ["messages",         "消息（L3 原文）", "📜", "c-cyan"],
+  ["memories_active",  "active 记忆",    "🧩", "c-purple"],
+  ["memories_pending", "pending 记忆",   "⏳", "c-orange"],
+  ["redlines",         "生效红线",        "🛡️", "c-red"],
+  ["persona_version",  "人格版本",        "🧠", "c-green"],
+];
+
 async function loadOverview() {
   const d = await api("/api/overview");
   $("#dbpath").textContent = d.db_path;
   const s = d.stats;
-  $("#stats").innerHTML = [["会话", s.sessions], ["消息（L3 原文）", s.messages],
-    ["active 记忆", s.memories_active], ["pending 记忆", s.memories_pending],
-    ["生效红线", s.redlines], ["人格版本", s.persona_version ?? "未录入"]]
-    .map(([k, v]) => `<div class="stat"><b>${esc(v)}</b><span>${esc(k)}</span></div>`).join("");
+  $("#stats").innerHTML = STAT_META.map(([key, label, icon, color]) => {
+    let v = s[key] ?? (key === "persona_version" ? "未录入" : 0);
+    return `<div class="stat"><div class="ic ${color}">${icon}</div><b>${esc(v)}</b><span>${esc(label)}</span></div>`;
+  }).join("");
   $("#sess tbody").innerHTML = d.sessions.map(x =>
-    `<tr><td>${x.id}</td><td>${esc((x.external_id||"").slice(0,18))}…</td>
-     <td>${esc((x.project_id||"").slice(0,28))}</td><td>${x.messages}</td>
+    `<tr><td>${x.id}</td><td><code>${esc((x.external_id||"").slice(0,14))}…</code></td>
+     <td>${esc((x.project_id||"").slice(0,26))}</td><td><b>${x.messages}</b></td>
      <td>${esc(x.title||"")}</td></tr>`).join("");
   $("#ov-hint").textContent = "消息按会话独立存储、永不混合；记忆条目跨会话汇总且每条带溯源指针；人格为全局单份（版本化，右列人格块维护）。";
 }
@@ -193,16 +265,18 @@ async function doExtract() {
 }
 async function loadPersona() {
   const d = await api("/api/persona");
-  if (!d.current) { $("#persona-cur").textContent = "尚未录入人格——在下方创建第一个版本。"; }
-  else {
+  if (!d.current) {
+    $("#persona-cur").innerHTML = `<div class="empty"><div class="big">🧠</div>尚未录入人格<br>在下方创建第一个版本，装配包将自动携带</div>`;
+  } else {
     $("#persona-cur").innerHTML = `<span class="tag on">v${d.current.version}</span> <pre>${esc(d.current.snapshot_md)}</pre>`;
     $("#ps-list").innerHTML = d.samples.length
       ? "<table><thead><tr><th>用户说</th><th>期望助手</th><th>标签</th></tr></thead><tbody>" +
         d.samples.map(s => `<tr><td>${esc(s.user_utterance)}</td><td>${esc(s.agent_response)}</td><td>${esc(s.tag||"")}</td></tr>`).join("") + "</tbody></table>"
-      : "<p class='muted'>当前版本还没有 few-shot 样本。</p>";
+      : `<div class="empty"><div class="big">🗨️</div>当前版本还没有 few-shot 样本</div>`;
   }
   $("#pv-tab tbody").innerHTML = d.versions.map(v =>
-    `<tr><td>v${v.version}</td><td>${esc(v.change_reason)}</td><td>${esc(v.created_at.slice(0,19))}</td></tr>`).join("");
+    `<tr><td><b>v${v.version}</b></td><td>${esc(v.change_reason)}</td><td>${esc(v.created_at.slice(0,19))}</td></tr>`).join("")
+    || "<tr><td colspan='3' class='muted'>暂无版本</td></tr>";
 }
 async function savePersona() {
   try {
@@ -223,9 +297,9 @@ async function loadRedlines() {
      <td><span class="tag ${r.enabled ? "on" : "off"}">${r.enabled ? "生效" : "停用"}</span></td>
      <td><span class="tag ${r.action}">${r.action}</span></td>
      <td>${esc(r.scope)}</td><td>${esc(r.statement)}</td>
-     <td style="max-width:220px;word-break:break-all">${esc(r.pattern)}</td><td>${r.cases}</td>
+     <td><code>${esc(r.pattern)}</code></td><td>${r.cases}</td>
      <td><button class="mini" onclick="toggleRl(${r.id})">${r.enabled ? "停用" : "启用"}</button></td></tr>`).join("")
-    || "<tr><td colspan='8' class='muted'>暂无红线</td></tr>";
+    || `<tr><td colspan='8'><div class="empty"><div class="big">🛡️</div>暂无红线——录入后 memory_guard 将据此拦截危险操作</div></td></tr>`;
 }
 async function toggleRl(id) {
   try { await api("/api/redlines/toggle", {id}); loadRedlines(); } catch (e) { msg(e.message, false); }
@@ -259,8 +333,8 @@ async function doRecall() {
     $("#rc-out").innerHTML = d.items.length
       ? `<p class="muted">延迟 ${d.latency_ms}ms，命中 ${d.items.length} 条（停止于 ${esc(d.stopped_by)}）</p>` +
         `<table><thead><tr><th>类型</th><th>证据</th><th>内容</th><th>指针</th></tr></thead><tbody>` +
-        d.items.map(i => `<tr><td>${esc(i.kind)}</td><td>${esc(i.evidence_level)}</td><td>${esc(i.statement)}</td><td style="max-width:160px;word-break:break-all">${esc(i.source_pointer||"")}</td></tr>`).join("") + "</tbody></table>"
-      : "<p class='muted'>无命中。</p>";
+        d.items.map(i => `<tr><td>${esc(i.kind)}</td><td>${esc(i.evidence_level)}</td><td>${esc(i.statement)}</td><td style="max-width:160px;word-break:break-all"><code>${esc(i.source_pointer||"")}</code></td></tr>`).join("") + "</tbody></table>"
+      : `<div class="empty"><div class="big">🔍</div>无命中——换个关键词试试</div>`;
   } catch (e) { msg(e.message, false); }
 }
 async function runDoctor() {
