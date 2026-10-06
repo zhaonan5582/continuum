@@ -1,0 +1,329 @@
+{
+  "total_count": 3,
+  "jobs": [
+    {
+      "id": 112148439605,
+      "run_id": 37426878736,
+      "workflow_name": "CI",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/zhaonan5582/continuum/actions/runs/37426878736",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOU8Hiu88AAAAaHJFiNQ",
+      "head_sha": "6b26cbcb832e9394ecbb872f0f8e2b2f7a9e9694",
+      "url": "https://api.github.com/repos/zhaonan5582/continuum/actions/jobs/112148439605",
+      "html_url": "https://github.com/zhaonan5582/continuum/actions/runs/37426878736/job/112148439605",
+      "status": "completed",
+      "conclusion": "failure",
+      "created_at": "2026-10-06T06:59:07Z",
+      "started_at": "2026-10-06T06:59:13Z",
+      "completed_at": "2026-10-06T07:00:25Z",
+      "name": "macos-latest / py3.13",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-10-06T06:59:14Z",
+          "completed_at": "2026-10-06T06:59:15Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-10-06T06:59:15Z",
+          "completed_at": "2026-10-06T06:59:16Z"
+        },
+        {
+          "name": "Set up Python 3.13",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-10-06T06:59:16Z",
+          "completed_at": "2026-10-06T06:59:16Z"
+        },
+        {
+          "name": "Zero-dependency sanity check",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-10-06T06:59:16Z",
+          "completed_at": "2026-10-06T06:59:16Z"
+        },
+        {
+          "name": "Full test suite (unittest, zero-dependency)",
+          "status": "completed",
+          "conclusion": "failure",
+          "number": 5,
+          "started_at": "2026-10-06T06:59:16Z",
+          "completed_at": "2026-10-06T07:00:22Z"
+        },
+        {
+          "name": "Install smoke (pip install + CLI + MCP handshake)",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 6,
+          "started_at": "2026-10-06T07:00:22Z",
+          "completed_at": "2026-10-06T07:00:22Z"
+        },
+        {
+          "name": "Privacy check — no network libraries in core",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 7,
+          "started_at": "2026-10-06T07:00:22Z",
+          "completed_at": "2026-10-06T07:00:22Z"
+        },
+        {
+          "name": "Post Set up Python 3.13",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 13,
+          "started_at": "2026-10-06T07:00:22Z",
+          "completed_at": "2026-10-06T07:00:22Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 14,
+          "started_at": "2026-10-06T07:00:22Z",
+          "completed_at": "2026-10-06T07:00:23Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15,
+          "started_at": "2026-10-06T07:00:23Z",
+          "completed_at": "2026-10-06T07:00:23Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/zhaonan5582/continuum/check-runs/112148439605",
+      "labels": [
+        "macos-latest"
+      ],
+      "runner_id": 1000000171,
+      "runner_name": "GitHub Actions 1000000171",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 112148439797,
+      "run_id": 37426878736,
+      "workflow_name": "CI",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/zhaonan5582/continuum/actions/runs/37426878736",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOU8Hiu88AAAAaHJFi9Q",
+      "head_sha": "6b26cbcb832e9394ecbb872f0f8e2b2f7a9e9694",
+      "url": "https://api.github.com/repos/zhaonan5582/continuum/actions/jobs/112148439797",
+      "html_url": "https://github.com/zhaonan5582/continuum/actions/runs/37426878736/job/112148439797",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-10-06T06:59:07Z",
+      "started_at": "2026-10-06T06:59:11Z",
+      "completed_at": "2026-10-06T06:59:41Z",
+      "name": "ubuntu-latest / py3.13",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-10-06T06:59:12Z",
+          "completed_at": "2026-10-06T06:59:13Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-10-06T06:59:13Z",
+          "completed_at": "2026-10-06T06:59:13Z"
+        },
+        {
+          "name": "Set up Python 3.13",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-10-06T06:59:13Z",
+          "completed_at": "2026-10-06T06:59:13Z"
+        },
+        {
+          "name": "Zero-dependency sanity check",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-10-06T06:59:13Z",
+          "completed_at": "2026-10-06T06:59:14Z"
+        },
+        {
+          "name": "Full test suite (unittest, zero-dependency)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-10-06T06:59:14Z",
+          "completed_at": "2026-10-06T06:59:30Z"
+        },
+        {
+          "name": "Install smoke (pip install + CLI + MCP handshake)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-10-06T06:59:30Z",
+          "completed_at": "2026-10-06T06:59:39Z"
+        },
+        {
+          "name": "Privacy check — no network libraries in core",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-10-06T06:59:39Z",
+          "completed_at": "2026-10-06T06:59:39Z"
+        },
+        {
+          "name": "Post Set up Python 3.13",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-10-06T06:59:39Z",
+          "completed_at": "2026-10-06T06:59:39Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 14,
+          "started_at": "2026-10-06T06:59:39Z",
+          "completed_at": "2026-10-06T06:59:39Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15,
+          "started_at": "2026-10-06T06:59:39Z",
+          "completed_at": "2026-10-06T06:59:39Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/zhaonan5582/continuum/check-runs/112148439797",
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "runner_id": 1000000172,
+      "runner_name": "GitHub Actions 1000000172",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 112148440014,
+      "run_id": 37426878736,
+      "workflow_name": "CI",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/zhaonan5582/continuum/actions/runs/37426878736",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOU8Hiu88AAAAaHJFjzg",
+      "head_sha": "6b26cbcb832e9394ecbb872f0f8e2b2f7a9e9694",
+      "url": "https://api.github.com/repos/zhaonan5582/continuum/actions/jobs/112148440014",
+      "html_url": "https://github.com/zhaonan5582/continuum/actions/runs/37426878736/job/112148440014",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-10-06T06:59:08Z",
+      "started_at": "2026-10-06T06:59:12Z",
+      "completed_at": "2026-10-06T07:00:13Z",
+      "name": "windows-latest / py3.13",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-10-06T06:59:13Z",
+          "completed_at": "2026-10-06T06:59:13Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-10-06T06:59:13Z",
+          "completed_at": "2026-10-06T06:59:19Z"
+        },
+        {
+          "name": "Set up Python 3.13",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-10-06T06:59:19Z",
+          "completed_at": "2026-10-06T06:59:19Z"
+        },
+        {
+          "name": "Zero-dependency sanity check",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-10-06T06:59:19Z",
+          "completed_at": "2026-10-06T06:59:20Z"
+        },
+        {
+          "name": "Full test suite (unittest, zero-dependency)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-10-06T06:59:20Z",
+          "completed_at": "2026-10-06T06:59:45Z"
+        },
+        {
+          "name": "Install smoke (pip install + CLI + MCP handshake)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-10-06T06:59:45Z",
+          "completed_at": "2026-10-06T07:00:09Z"
+        },
+        {
+          "name": "Privacy check — no network libraries in core",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-10-06T07:00:09Z",
+          "completed_at": "2026-10-06T07:00:09Z"
+        },
+        {
+          "name": "Post Set up Python 3.13",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-10-06T07:00:09Z",
+          "completed_at": "2026-10-06T07:00:09Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 14,
+          "started_at": "2026-10-06T07:00:09Z",
+          "completed_at": "2026-10-06T07:00:11Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15,
+          "started_at": "2026-10-06T07:00:11Z",
+          "completed_at": "2026-10-06T07:00:11Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/zhaonan5582/continuum/check-runs/112148440014",
+      "labels": [
+        "windows-latest"
+      ],
+      "runner_id": 1000000173,
+      "runner_name": "GitHub Actions 1000000173",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    }
+  ]
+}

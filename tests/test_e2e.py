@@ -35,17 +35,19 @@ class TestEndToEnd(unittest.TestCase):
              "--port", str(cls.port), "--no-browser"],
             stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL, env=env, cwd=str(REPO))
-        # 等服务就绪（最长 20s）
-        deadline = time.time() + 20
+        # 等服务就绪（macOS runner 冷启动 import 慢，60s 宽容；run#58 实测 20s 不够）
+        deadline = time.time() + 60
+        last_err = ""
         while time.time() < deadline:
             try:
                 with urllib.request.urlopen(cls.base + "/api/overview", timeout=3) as r:
                     if r.status == 200:
                         break
-            except Exception:
+            except Exception as e:
+                last_err = f"{type(e).__name__}: {e}"
                 time.sleep(0.5)
         else:
-            raise RuntimeError("壳未在 20 秒内就绪")
+            raise RuntimeError(f"壳未在 60 秒内就绪（最后错误: {last_err}）")
 
     @classmethod
     def tearDownClass(cls):
