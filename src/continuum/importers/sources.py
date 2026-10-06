@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import json
+import sqlite3
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -191,6 +192,21 @@ class GenericJsonlSource:
     def max_content_bytes(self) -> int:
         return _MAX_BYTES
 
+    def read(self, path: Path, watermark: int) -> tuple[list[UDFMessage], int]:
+        """JSONL 水位 = 字节 offset；尾部残行留给下一轮（N4 抽象：水位语义由 Source 决定）。"""
+        with path.open("rb") as f:
+            f.seek(watermark)
+            data = f.read()
+        if not data.endswith(b"\n"):
+            cut = data.rfind(b"\n")
+            if cut == -1:
+                return [], watermark
+            data = data[: cut + 1]
+        new_wm = watermark + len(data)
+        ext = self.external_id(path)
+        return self.parse_increment(data, session_id=ext,
+                                    project_id=self.project_id(path)), new_wm
+
     def parse_increment(self, data: bytes, *, session_id: str,
                         project_id: str | None) -> list[UDFMessage]:
         out: list[UDFMessage] = []
@@ -243,6 +259,21 @@ class WorkbuddySource:
 
     def max_content_bytes(self) -> int:
         return _MAX_BYTES
+
+    def read(self, path: Path, watermark: int) -> tuple[list[UDFMessage], int]:
+        """JSONL 水位 = 字节 offset；尾部残行留给下一轮（N4 抽象：水位语义由 Source 决定）。"""
+        with path.open("rb") as f:
+            f.seek(watermark)
+            data = f.read()
+        if not data.endswith(b"\n"):
+            cut = data.rfind(b"\n")
+            if cut == -1:
+                return [], watermark
+            data = data[: cut + 1]
+        new_wm = watermark + len(data)
+        ext = self.external_id(path)
+        return self.parse_increment(data, session_id=ext,
+                                    project_id=self.project_id(path)), new_wm
 
     def parse_increment(self, data: bytes, *, session_id: str,
                         project_id: str | None) -> list[UDFMessage]:
@@ -300,6 +331,21 @@ class CodexSource:
     def max_content_bytes(self) -> int:
         return _MAX_BYTES
 
+    def read(self, path: Path, watermark: int) -> tuple[list[UDFMessage], int]:
+        """JSONL 水位 = 字节 offset；尾部残行留给下一轮（N4 抽象：水位语义由 Source 决定）。"""
+        with path.open("rb") as f:
+            f.seek(watermark)
+            data = f.read()
+        if not data.endswith(b"\n"):
+            cut = data.rfind(b"\n")
+            if cut == -1:
+                return [], watermark
+            data = data[: cut + 1]
+        new_wm = watermark + len(data)
+        ext = self.external_id(path)
+        return self.parse_increment(data, session_id=ext,
+                                    project_id=self.project_id(path)), new_wm
+
     def parse_increment(self, data: bytes, *, session_id: str,
                         project_id: str | None) -> list[UDFMessage]:
         out: list[UDFMessage] = []
@@ -327,6 +373,117 @@ class CodexSource:
             out.append(UDFMessage(ts=ts, role=role, host=self.host,
                                   session_id=session_id, content=text, meta=UDFMeta()))
         return out
+
+
+# ---------- SQLite 族（N4：只读连接 + 结构化解析 + rowid 水位） ----------
+#
+# SQLite 宿主没有"字节 offset"概念（文件内部页结构会变），水位改用**消息行水位**
+# （message 表最大 rowid 或时间戳）。连接一律 **只读（file:?mode=ro）**——
+# 绝不触碰宿主正在运行的库（隐私与安全纪律，2026-10-07 实测 Z Code 结构后实现）。
+
+
+@dataclass
+class ZCodeSource:
+    """Z Code（Z.ai）——**实测结构**（2026-10-07）：
+
+    db: ~/.zcode/cli/db/db.sqlite
+    - message 表：id/session_id/time_created/data(JSON: role/time/model/cost)
+    - part 表：id/message_id/session_id/time_created/data(JSON: type/text)
+    - **正文 = part.type=="text"**（过滤 reasoning/step-start/step-finish/tool）
+    - 一个 db 含多 session → external_id 用 session_id（不是文件名）
+    """
+
+    host: str = "z-code"
+    root: Path = Path.home() / ".zcode"
+    patterns: tuple[str, ...] = ("**/db.sqlite", "**/*.sqlite", "**/*.db")
+    format_kind: str = "sqlite"
+
+    def roots(self) -> tuple[Path, ...]:
+        return (self.root,)
+
+    def external_id(self, path: Path) -> str:
+        return path.stem
+
+    def project_id(self, path: Path) -> str | None:
+        return "zcode"
+
+    def max_content_bytes(self) -> int:
+        return _MAX_BYTES
+
+    def read(self, path: Path, watermark: int) -> tuple[list[UDFMessage], int]:
+        """返回 (新消息, 新 rowid 水位)。只读打开；库不可读时返回空（不抛）。
+
+        连接用 try/finally 兜底关闭——早退分支也必须释放（实测事故：
+        泄漏导致 Windows 文件句柄不释放、长跑进程会耗尽句柄）。
+        """
+        conn = None
+        rows = []
+        try:
+            conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True, timeout=5)
+            conn.row_factory = sqlite3.Row
+            names = {r[0] for r in conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
+            if not {"message", "part"} <= names:
+                return [], watermark
+            rows = conn.execute(
+                "SELECT m.rowid AS mrow, m.session_id, m.time_created, m.data AS mdata,"
+                " p.data AS pdata"
+                " FROM message m JOIN part p ON p.message_id = m.id"
+                " WHERE m.rowid > ? ORDER BY m.rowid, p.rowid", (watermark,)).fetchall()
+        except sqlite3.Error:
+            return [], watermark
+        finally:
+            if conn is not None:
+                conn.close()
+
+        # 按 message 聚合 text part（一条消息 = 一条 UDF）
+        texts: dict[int, dict] = {}
+        max_row = watermark
+        for r in rows:
+            max_row = max(max_row, int(r["mrow"]) if "mrow" in r.keys() else 0)
+            try:
+                pdata = json.loads(r["pdata"]) if isinstance(r["pdata"], str) else (r["pdata"] or {})
+                mdata = json.loads(r["mdata"]) if isinstance(r["mdata"], str) else (r["mdata"] or {})
+            except (json.JSONDecodeError, TypeError):
+                continue
+            if pdata.get("type") != "text":
+                continue                      # 只要正文 part
+            text = pdata.get("text") or ""
+            if not str(text).strip() or _is_host_injection(str(text)):
+                continue
+            key = int(r["mrow"])
+            slot = texts.setdefault(key, {"sid": r["session_id"], "ts": r["time_created"],
+                                          "role": mdata.get("role"), "buf": []})
+            slot["buf"].append(_strip_inject_blocks(str(text)))
+        out: list[UDFMessage] = []
+        for slot in texts.values():
+            role = slot["role"] if slot["role"] in ("user", "assistant") else "assistant"
+            text = "\n".join(x for x in slot["buf"] if x.strip())
+            if not text.strip():
+                continue
+            ts = _safe_ms(slot["ts"]) or datetime.now(timezone.utc).strftime(
+                "%Y-%m-%dT%H:%M:%S.%fZ")
+            out.append(UDFMessage(ts=ts, role=role, host=self.host,
+                                  session_id=str(slot["sid"] or "unknown"),
+                                  content=text, meta=UDFMeta()))
+        return out, max_row
+
+    def parse_increment(self, data: bytes, *, session_id: str,
+                        project_id: str | None) -> list[UDFMessage]:
+        return []                             # SQLite 走 read()，不存在字节增量
+
+
+def _resolve_sqlite_watermark(path: Path) -> int:
+    """新库首次扫描时用于探测最大 rowid（老库判据用）。"""
+    try:
+        conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True, timeout=5)
+        try:
+            row = conn.execute("SELECT COALESCE(MAX(rowid),0) FROM message").fetchone()
+            return int(row[0]) if row else 0
+        finally:
+            conn.close()
+    except sqlite3.Error:
+        return 0
 
 
 # ---------- 装配 ----------
@@ -362,6 +519,10 @@ def build_sources(home: Path | None = None) -> list[FeedSource]:
                 s = _guarded(CodexSource())
                 if s:
                     out.append(s)
+        elif prof.key == "z-code":
+            # SQLite 族（实测结构）——库文件存在才纳入
+            if any(g for g in prof.session_roots if g.is_dir()):
+                out.append(ZCodeSource())
         elif prof.format_kind == "jsonl":
             # 其余 JSONL 族宿主（含 parser_ready 的 CC：格式由嗅探识别）→ 通用嗅探器
             for root in prof.session_roots:

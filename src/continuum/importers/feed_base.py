@@ -65,6 +65,15 @@ class FeedSource(Protocol):
         """增量字节（完整行）→ UDF 消息列表。解析失败必须容错（跳过坏行）。"""
         ...
 
+    def read(self, path: Path, watermark: int) -> tuple[list[UDFMessage], int]:
+        """从 watermark 之后读到最新。返回 (新消息, 新水位)。
+
+        水位语义由 Source 决定：JSONL 类 = 字节 offset；SQLite 类 = 行水位
+        （rowid/时间戳）。引擎只负责持久化与比较大小，不关心语义——
+        这样新格式（数据库/压缩）无需改动引擎（2026-10-07 N4 抽象）。
+        """
+        ...
+
     def max_content_bytes(self) -> int:
         """单条内容字节上限（防御巨型行）。"""
         ...
@@ -250,25 +259,23 @@ class SessionFeeder:
                     yield Path(f)
 
     def _read_increment(self, src: FeedSource, path: Path, offset: int) -> tuple[int, int, int]:
-        """读 offset 后的完整行并入库。返回 (新入库, 幂等跳过, 新 offset)。"""
-        with path.open("rb") as f:
-            f.seek(offset)
-            data = f.read()
-        if not data.endswith(b"\n"):
-            cut = data.rfind(b"\n")       # 尾行残缺 → 截到最后一个完整行
-            if cut == -1:
-                return 0, 0, offset
-            data = data[: cut + 1]
-        new_offset = offset + len(data)
-
-        external_id = src.external_id(path)
-        project_id = src.project_id(path)
-        msgs = src.parse_increment(data, session_id=external_id, project_id=project_id)
+        """调用 Source 读取（水位语义由 Source 决定），落库并返回 (新入库, 幂等跳过, 新水位)。"""
+        msgs, new_offset = src.read(path, offset)
         if not msgs:
             return 0, 0, new_offset
-        sid = self.backend.ensure_session(src.host, external_id, project_id=project_id)
-        ids, skipped = self.backend.append_messages(sid, msgs)
-        return len(ids), skipped, new_offset
+        # 多会话文件（如 SQLite 一库多 session）由 Source 在消息上标 host/session 归属；
+        # 这里按 (host, session_id) 分组落库（jsonl 场景通常只有一组）
+        total_new = 0
+        total_skip = 0
+        groups: dict[tuple[str, str, str | None], list[UDFMessage]] = {}
+        for m in msgs:
+            groups.setdefault((src.host, m.session_id, src.project_id(path)), []).append(m)
+        for (host, ext_id, proj), batch in groups.items():
+            sid = self.backend.ensure_session(host, ext_id, project_id=proj)
+            ids, skipped = self.backend.append_messages(sid, batch)
+            total_new += len(ids)
+            total_skip += skipped
+        return total_new, total_skip, new_offset
 
 
 def is_never_read(path: Path | str) -> bool:

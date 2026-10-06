@@ -168,3 +168,63 @@ class TestMultiHostFeed(unittest.TestCase):
             self.assertIn(str(td / "a.jsonl"), merged, "先写者的登记被覆盖了")
             self.assertIn(str(td / "b.jsonl"), merged)
             be.close()
+
+
+class TestSqliteSource(unittest.TestCase):
+    """N4：SQLite 族（Z Code 实测结构的假库验证，不依赖真机）。"""
+
+    def _mk_zcode_db(self, path):
+        import json, sqlite3
+        c = sqlite3.connect(str(path))
+        c.execute("CREATE TABLE message(id TEXT, session_id TEXT, time_created INTEGER, data TEXT)")
+        c.execute("CREATE TABLE part(id TEXT, message_id TEXT, session_id TEXT, time_created INTEGER, data TEXT)")
+        c.execute("INSERT INTO message VALUES('m1','s1',1000,?)",
+                  (json.dumps({"role": "user"}),))
+        c.execute("INSERT INTO message VALUES('m2','s1',2000,?)",
+                  (json.dumps({"role": "assistant"}),))
+        c.execute("INSERT INTO part VALUES('p1','m1','s1',1000,?)",
+                  (json.dumps({"type": "text", "text": "用户问题原文"}),))
+        c.execute("INSERT INTO part VALUES('p2','m2','s1',2000,?)",
+                  (json.dumps({"type": "reasoning", "text": "思维链不应入库"}),))
+        c.execute("INSERT INTO part VALUES('p3','m2','s1',2000,?)",
+                  (json.dumps({"type": "text", "text": "助手回答原文"}),))
+        c.commit()
+        c.close()
+
+    def test_reads_text_parts_only(self):
+        import tempfile
+        from pathlib import Path
+        from continuum.importers.sources import ZCodeSource
+        with tempfile.TemporaryDirectory() as t:
+            db = Path(t) / "db.sqlite"
+            self._mk_zcode_db(db)
+            msgs, wm = ZCodeSource().read(db, 0)
+            self.assertEqual(len(msgs), 2, "只应取 type=text 的两个 part")
+            self.assertEqual([m.role for m in msgs], ["user", "assistant"])
+            self.assertIn("用户问题原文", msgs[0].content)
+            self.assertNotIn("思维链", msgs[1].content, "reasoning 必须被过滤")
+            self.assertEqual(wm, 2, "水位 = message 最大 rowid")
+            # 增量：再读应无新内容
+            msgs2, wm2 = ZCodeSource().read(db, wm)
+            self.assertEqual(msgs2, [])
+            self.assertEqual(wm2, wm)
+
+    def test_missing_tables_returns_empty(self):
+        import sqlite3, tempfile
+        from pathlib import Path
+        from continuum.importers.sources import ZCodeSource
+        with tempfile.TemporaryDirectory() as t:
+            db = Path(t) / "empty.db"
+            sqlite3.connect(str(db)).close()
+            msgs, wm = ZCodeSource().read(db, 0)
+            self.assertEqual((msgs, wm), ([], 0), "无 message/part 表 → 空且不抛")
+
+    def test_unreadable_file_does_not_raise(self):
+        import tempfile
+        from pathlib import Path
+        from continuum.importers.sources import ZCodeSource
+        with tempfile.TemporaryDirectory() as t:
+            bad = Path(t) / "not_a_db.sqlite"
+            bad.write_text("not a database", encoding="utf-8")
+            msgs, wm = ZCodeSource().read(bad, 5)
+            self.assertEqual((msgs, wm), ([], 5), "坏文件 → 水位不变、不抛")
