@@ -248,16 +248,10 @@
     <div class="card"><h2><span class="ic">🧮</span><span data-i18n="h_costcalc">判决成本计算器</span>
       <span class="muted" data-i18n="h_costcalc_sub">（月卡之外，你自己的 key 还要花多少）</span></h2>
       <div class="row">
-        <select id="cc-preset" onchange="ccApplyPreset()" style="flex:0 0 44%">
-          <option value="deepseek" data-i18n="o_deepseek">DeepSeek（低价档）</option>
-          <option value="flash" data-i18n="o_flash">GLM-flash 档（中价）</option>
-          <option value="premium" data-i18n="o_premium">Claude/GPT 高档</option>
-          <option value="custom" data-i18n="o_custom">自定义单价</option>
-        </select>
-        <div class="row" style="flex:1">
-          <input type="number" id="cc-in" step="0.01" title="$ / 1M 输入">
-          <input type="number" id="cc-out" step="0.01" title="$ / 1M 输出">
-        </div>
+        <div style="flex:1"><label class="muted" data-i18n="l_price_in">输入单价（$ / 百万 tokens）</label>
+          <input type="number" id="cc-in" step="0.01" value="0.15" oninput="ccCalc()"></div>
+        <div style="flex:1"><label class="muted" data-i18n="l_price_out">输出单价（$ / 百万 tokens）</label>
+          <input type="number" id="cc-out" step="0.01" value="0.60" oninput="ccCalc()"></div>
       </div>
       <div style="margin-top:10px">
         <label class="muted" data-i18n="l_judges_month">每月判决次数：</label>
@@ -267,10 +261,9 @@
           <span class="muted" style="flex:1;text-align:center"><b id="cc-judges-val" style="color:var(--brand)">600</b></span>
           <span class="muted" style="flex:0 0 auto">5000</span></div>
       </div>
-      <div class="stats" style="margin-top:12px;grid-template-columns:repeat(3,1fr)">
-        <div class="stat"><b id="cc-per">$0.0007</b><span data-i18n="l_per_judge">单次判决</span></div>
-        <div class="stat"><b id="cc-month" style="color:var(--brand)">$0.66</b><span data-i18n="l_month_key">你的 key 月支出</span></div>
-        <div class="stat"><b id="cc-total">$25.66</b><span data-i18n="l_tco">月度总拥有成本</span></div>
+      <div class="stats" style="margin-top:12px;grid-template-columns:repeat(2,1fr)">
+        <div class="stat"><b id="cc-per">$0.0004</b><span data-i18n="l_per_judge">单次判决</span></div>
+        <div class="stat"><b id="cc-month" style="color:var(--brand)">$0.24</b><span data-i18n="l_month_key">你的 key 月支出</span></div>
       </div>
       <p class="muted" style="margin-top:10px" data-i18n="hint_costcalc"></p>
     </div>
@@ -302,9 +295,9 @@ const I18N = {
     "hint_expected":"期望动作缺省：正用例→拦截，反用例→放行","hint_persona":"同名=该套的新版本；新名称=新建一套人格并自动切换激活。装配包始终携带当前激活的那套。",
     "hint_license":"注册码激活后解锁对应版本能力。校验目前为本地骨架（格式+校验位），在线激活随商业化接入。",
     "h_costcalc":"判决成本计算器","h_costcalc_sub":"（月卡之外，你自己的 key 还要花多少）",
-    "o_deepseek":"DeepSeek（低价档）","o_flash":"GLM-flash 档（中价）","o_premium":"Claude/GPT 高档","o_custom":"自定义单价",
-    "l_judges_month":"每月判决次数：","l_per_judge":"单次判决","l_month_key":"你的 key 月支出","l_tco":"月度总拥有成本",
-    "hint_costcalc":"公式完全公开：判决次数 ×（1500 输入 tokens × 输入单价 + 300 输出 tokens × 输出单价）÷ 1M。判决只在沉淀时触发；批量判决可再降 60–70%。token 费直接付给你的模型厂商，不经过我们。",
+    "l_judges_month":"每月判决次数：","l_per_judge":"单次判决","l_month_key":"你的 key 月支出（不含卡费）",
+    "l_price_in":"输入单价（$ / 百万 tokens）","l_price_out":"输出单价（$ / 百万 tokens）",
+    "hint_costcalc":"公式完全公开：判决次数 ×（1500 输入 tokens × 输入单价 + 300 输出 tokens × 输出单价）÷ 1M。判决只在沉淀时触发；批量判决可再降 60–70%。不含任何卡费（月卡/季卡/年卡另计）。token 费直接付给你的模型厂商，不经过我们。",
     "s_history":"版本历史（可 diff 可回滚）",
     "st_sessions":"会话","st_messages":"消息（原文层）","st_active":"生效记忆","st_pending":"待确认记忆","st_redlines":"生效红线","st_persona":"激活人格",
     "e_unnamed":"未录入","e_none":"无","btn_view":"查看","pg_info":(o,l,t)=>`第 ${o+1}–${Math.min(o+l,t)} 条 / 共 ${t} 条`,
@@ -324,9 +317,9 @@ const I18N = {
     "hint_expected":"Default expectation: positive→block, negative→allow","hint_persona":"Same name = new version of that set; new name = new persona set (auto-activated). The assembly package always carries the active one.",
     "hint_license":"Activating a license key unlocks the corresponding tier. Validation is currently a local skeleton (format + checksum); online activation ships with commercialization.",
     "h_costcalc":"Judgment cost calculator","h_costcalc_sub":"(beyond the monthly card - what your own key will cost)",
-    "o_deepseek":"DeepSeek (budget tier)","o_flash":"GLM-flash tier (mid)","o_premium":"Claude/GPT premium","o_custom":"Custom pricing",
-    "l_judges_month":"Judgments per month:","l_per_judge":"Per judgment","l_month_key":"Your key monthly spend","l_tco":"Total monthly cost of ownership",
-    "hint_costcalc":"Formula is fully open: judgments x (1,500 input tokens x input price + 300 output tokens x output price) / 1M. Judgments fire only on extraction; batch judging cuts cost another 60-70%. Token fees go directly to your model vendor - never through us.",
+    "l_judges_month":"Judgments per month:","l_per_judge":"Per judgment","l_month_key":"Your key monthly spend (card fee not included)",
+    "l_price_in":"Input price ($ / 1M tokens)","l_price_out":"Output price ($ / 1M tokens)",
+    "hint_costcalc":"Formula is fully open: judgments x (1,500 input tokens x input price + 300 output tokens x output price) / 1M. Judgments fire only on extraction; batch judging cuts cost another 60-70%. Card fees (monthly/quarterly/yearly) are separate. Token fees go directly to your model vendor - never through us.",
     "s_history":"Version history (diffable, rollbackable)",
     "st_sessions":"Sessions","st_messages":"Messages (verbatim)","st_active":"Active memories","st_pending":"Pending memories","st_redlines":"Active redlines","st_persona":"Active persona",
     "e_unnamed":"Not set","e_none":"none","btn_view":"View","pg_info":(o,l,t)=>`${o+1}–${Math.min(o+l,t)} of ${t}`,
@@ -496,18 +489,9 @@ async function runDoctor() {
   } catch (e) { msg(e.message, false); }
 }
 /* ---- 判决成本计算器（公式完全公开：次数 × (输入tokens×输入单价 + 输出tokens×输出单价)/1M；
-        单次判决 ≈ 1500 输入 tokens + 300 输出 tokens（实测口径）。纯本地计算，不联网。 ---- */
-const CC_PRESETS = {
-  deepseek: {in: 0.15, out: 0.6},
-  flash:    {in: 0.45, out: 1.5},
-  premium:  {in: 3.0,  out: 15.0},
-};
-const CC_IN_TOKENS = 1500, CC_OUT_TOKENS = 300, MONTH_CARD = 25;
-function ccApplyPreset() {
-  const p = CC_PRESETS[$("#cc-preset").value];
-  if (p) { $("#cc-in").value = p.in; $("#cc-out").value = p.out; }
-  ccCalc();
-}
+        单次判决 ≈ 1500 输入 tokens + 300 输出 tokens（实测口径）。纯本地计算，不联网。
+        不含卡费——月卡/季卡/年卡费用另计。 ---- */
+const CC_IN_TOKENS = 1500, CC_OUT_TOKENS = 300;
 function ccCalc() {
   const pin = parseFloat($("#cc-in").value) || 0;
   const pout = parseFloat($("#cc-out").value) || 0;
@@ -517,7 +501,6 @@ function ccCalc() {
   const month = per * n;
   $("#cc-per").textContent = "$" + per.toFixed(4);
   $("#cc-month").textContent = "$" + month.toFixed(2);
-  $("#cc-total").textContent = "$" + (month + MONTH_CARD).toFixed(2);
 }
 
 async function loadLicense() {
@@ -533,7 +516,7 @@ async function activateLicense() {
   } catch (e) { msg(e.message, false); }
 }
 applyLang();
-ccApplyPreset();   // 判决成本计算器：默认档（DeepSeek）+ 默认次数初始化显示
+ccCalc();   // 判决成本计算器：以默认单价/次数初始化显示
 </script>
 </body>
 </html>
