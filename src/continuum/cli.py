@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -387,6 +388,9 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    db = getattr(args, "db", None)
+    if db:
+        args.db = os.path.expanduser(db)   # 支持 ~/memory.continuum.db 形态
     return args.func(args)
 
 
