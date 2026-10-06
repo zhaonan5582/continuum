@@ -105,10 +105,20 @@ class SQLiteBackend(StorageBackend):
             for msg in messages:
                 seq += 1
                 chash = _sha256(f"{msg.role}|{msg.ts}|{msg.content}")
+                # fast 模式（用户可选）额外写归一列；lite 模式跳过（零开销）
+                norm_val = None
+                try:
+                    from continuum.config import get_mode as _gm
+                    if _gm() == "fast":
+                        from continuum.indexer import normalize as _norm
+                        norm_val = _norm(msg.content)
+                except Exception:       # noqa: BLE001 - 配置异常不影响写入
+                    pass
                 cur = self.conn.execute(
                     "INSERT OR IGNORE INTO messages"
-                    " (session_id, seq, role, host, content, content_hash, ts, token_count)"
-                    " VALUES(?,?,?,?,?,?,?,?)",
+                    " (session_id, seq, role, host, content, content_hash, ts, token_count,"
+                    "  content_norm)"
+                    " VALUES(?,?,?,?,?,?,?,?,?)",
                     (
                         session_id,
                         seq,
@@ -118,6 +128,7 @@ class SQLiteBackend(StorageBackend):
                         chash,
                         msg.ts,
                         msg.meta.tokens,
+                        norm_val,
                     ),
                 )
                 if cur.rowcount == 0:  # 幂等命中：同一消息重复推送
@@ -212,6 +223,30 @@ class SQLiteBackend(StorageBackend):
         q = (query or "").strip()
         if not q:
             return []
+
+        # ---- fast 路径（用户可选，docs/16 实测 100+ 倍提速）----
+        #   FTS5 trigram 短语查询 = 连续子串精确匹配（与 LIKE 等价但走索引）；
+        #   未命中/异常时**自动回退 lite 路径**（保证召回不降）。
+        try:
+            from continuum import indexer as _idx
+            from continuum.config import get_mode as _get_mode
+            if _get_mode() == "fast" and _idx.fts_ready(self.conn):
+                probe = _idx.normalize(q)[:60].replace('"', '""')
+                if len(probe) >= 3:
+                    hf = (" AND m.session_id IN (SELECT id FROM sessions WHERE host_agent = ?)"
+                          if host_agent else "")
+                    hp = [host_agent] if host_agent else []
+                    rows = self.conn.execute(
+                        "SELECT m.id, m.session_id, m.role, m.ts, m.content, NULL AS snip"
+                        f" FROM {_idx.FTS_TABLE} f JOIN messages m ON m.id = f.rowid"
+                        f" WHERE {_idx.FTS_TABLE} MATCH ?" + hf +
+                        " ORDER BY LENGTH(m.content) ASC, m.id DESC LIMIT ?",
+                        ['"' + probe + '"'] + hp + [max(limit * 5, 200)]).fetchall()
+                    if rows:
+                        return [dict(r) for r in rows]
+        except Exception:               # noqa: BLE001 - fast 路径任何问题都回退 lite
+            pass
+
         q_nospace = _re.sub(r"\s+", "", q)         # 去全部空白（两侧对齐用）
         host_filter = ""
         extra: list = []

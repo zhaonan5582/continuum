@@ -42,8 +42,8 @@ class TestSchemaMigration(unittest.TestCase):
 
     def test_migrate_creates_all_core_tables(self):
         applied = runner.migrate(self.conn, MIGRATIONS)
-        self.assertEqual(applied, ["0001_core.sql", "0002_persona_guard.sql", "0003_persona_named.sql"])
-        self.assertEqual(runner.schema_version(self.conn), 3)
+        self.assertEqual(applied, ["0001_core.sql", "0002_persona_guard.sql", "0003_persona_named.sql", "0004_recall_index.sql"])
+        self.assertEqual(runner.schema_version(self.conn), 4)
         tables = {
             r["name"]
             for r in self.conn.execute("SELECT name FROM sqlite_master WHERE type IN ('table','view')")
@@ -58,13 +58,13 @@ class TestSchemaMigration(unittest.TestCase):
 
     def test_migrate_applies_both(self):
         applied = runner.migrate(self.conn, MIGRATIONS)
-        self.assertEqual(applied, ["0001_core.sql", "0002_persona_guard.sql", "0003_persona_named.sql"])
-        self.assertEqual(runner.schema_version(self.conn), 3)
+        self.assertEqual(applied, ["0001_core.sql", "0002_persona_guard.sql", "0003_persona_named.sql", "0004_recall_index.sql"])
+        self.assertEqual(runner.schema_version(self.conn), 4)
 
     def test_migration_gap_rejected(self):
-        # 库比代码新（user_version=4 > 最高迁移 3）——必须拒绝而非静默跳过
+        # 库比代码新（user_version=5 > 最高迁移 4）——必须拒绝而非静默跳过
         self.conn.executescript(
-            "CREATE TABLE fake(x); PRAGMA user_version = 4;"
+            "CREATE TABLE fake(x); PRAGMA user_version = 5;"
         )
         with self.assertRaises(runner.MigrationError):
             runner.migrate(self.conn, MIGRATIONS)

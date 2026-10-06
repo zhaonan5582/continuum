@@ -15,6 +15,7 @@
 - feed             喂食器：主动扫描会话文件增量入库（--once / --watch）
 - agents           探测本机 agent 与可用接入机制（只读视图）
 - setup            一键安装：探测 + 自动接入全部已安装 agent
+- index            召回索引模式切换（lite 省存储 / fast 快 100 倍）
 """
 
 from __future__ import annotations
@@ -294,6 +295,55 @@ def cmd_agents(args) -> int:
     return 0
 
 
+def cmd_index(args) -> int:
+    """召回索引模式管理（lite / fast）——**选择权留给用户**（docs/16）。
+
+    lite（默认）：存储小、检索较慢（随库线性劣化）
+    fast        ：检索快 100+ 倍且不劣化、存储 +78%
+    两种都保留、可随时切换（切换完全可逆，原文一行不动）。
+    """
+    from continuum import indexer
+    from continuum.config import get_mode, set_mode
+
+    be = _open_backend(args.db)
+    try:
+        mode = args.mode or "status"
+        if mode == "status":
+            st = indexer.index_status(be.conn, get_mode())
+            if not st["chosen"]:
+                print("召回索引模式：**尚未选择**（当前按现状机制运行）\n")
+                print("两种模式都在，选择权在你（没有预设默认）：")
+                print("  lite — 存储小（基线）· 检索较慢，随库增长线性劣化（越大越慢）")
+                print("  fast — 存储 +78% · 检索快 100 倍以上，且不随库增长劣化\n")
+                print("实测参考（6 万条消息）：lite 291ms / fast 1-2ms")
+                print("选择：continuum index --mode lite   或   continuum index --mode fast")
+                print("（可随时切换，完全可逆：切回 lite 会清除索引，原文一行不动）")
+                return 0
+            print(f"召回索引模式: {st['mode']}（你选择的）")
+            print(f"  消息数: {st['messages']} | 归一列已填: {st['norm_filled']}")
+            print(f"  FTS 索引: {'已建' if st['fts_ready'] else '未建'} | 索引行: {st['fts_rows']}")
+            print(f"  状态一致: {'✓' if st['consistent'] else '⚠ 建议重建（continuum index --mode fast）'}")
+            print("（可随时切换；切回 lite 会清除索引，原文一行不动）")
+            return 0
+        if mode not in ("lite", "fast"):
+            print(f"模式必须是 lite / fast / status，得到: {mode}")
+            return 1
+        if mode == "fast":
+            print("正在切换 fast（回填归一列 + 建 FTS 索引，可能需要数秒）…")
+            r = indexer.build_fast_index(be.conn)
+            set_mode("fast")
+            print(f"✓ 已切换到 fast：回填 {r['filled']} 条（{r['fill_sec']}s）"
+                  f" | 建索引 {r['fts_sec']}s")
+        else:
+            r = indexer.drop_fast_index(be.conn)
+            set_mode("lite")
+            print(f"✓ 已切换回 lite：FTS {'已删' if r['fts_dropped'] else '本就不存在'}"
+                  f" | 清理归一列 {r['norm_cleared']} 条（原文未动）")
+        return 0
+    finally:
+        be.close()
+
+
 def cmd_setup(args) -> int:
     """一键安装（docs/10 目标形态）：探测 → 自动接入全部发现的宿主 → 报告。
 
@@ -541,6 +591,13 @@ def build_parser() -> argparse.ArgumentParser:
                     help="注册登录自启（后台常驻，无需再开命令行窗口）")
     sh.add_argument("--uninstall-autostart", action="store_true", help="移除登录自启")
     sh.set_defaults(func=cmd_shell)
+
+    ix = sub.add_parser("index", help="召回索引模式（lite=省存储 / fast=快 100 倍，可随时切换）")
+    ix.add_argument("--db", default=argparse.SUPPRESS,
+                    help="记忆库路径（也可放子命令前：continuum --db X index）")
+    ix.add_argument("--mode", choices=["lite", "fast", "status"], default="status",
+                    help="lite / fast / status（默认 status 查看当前模式）")
+    ix.set_defaults(func=cmd_index)
 
     su = sub.add_parser("setup", help="一键安装：探测并自动接入本机全部已安装 agent")
     su.add_argument("--db", default=argparse.SUPPRESS,

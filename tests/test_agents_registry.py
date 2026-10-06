@@ -327,3 +327,103 @@ class TestRecallCoverageContract(unittest.TestCase):
             for q in ("| |---|---|", "|---|---|", "─┘ ```"):
                 self.assertTrue(be.search_content(q, limit=10), f"符号短语 {q!r} 应命中")
             be.close()
+
+
+class TestRecallIndexModes(unittest.TestCase):
+    """召回索引双模式（lite/fast）契约——楠哥 2026-10-07："两种都保留，选择权留给用户"。
+
+    风险点（楠哥提醒"用户可能在使用过程中切换，很容易出错"）：
+    ① 外部内容表模式 FTS 必须配触发器，否则新消息不进索引（隐性 bug）；
+    ② 切换必须幂等可续（回填只填 NULL、rebuild 幂等）；
+    ③ 两模式召回结果必须一致（都 100%）。
+    """
+
+    def _be(self, td):
+        from continuum.storage import SQLiteBackend
+        from pathlib import Path
+        return SQLiteBackend(str(Path(td) / "t.db"),
+                             REPO / "src" / "continuum" / "storage" / "migrations" / "sql")
+
+    def _seed(self, be, n=30):
+        from continuum.udf import UDFMessage
+        sid = be.ensure_session("t", "s1")
+        be.append_messages(sid, [
+            UDFMessage(ts=f"2026-01-01T00:00:{i % 60:02d}.000Z", role="user", host="t",
+                       session_id="s1", content=f"第{i}条：跨 agent 记忆 XUNIQ{i} 内容")
+            for i in range(n)])
+
+    def test_fast_index_and_recall_100(self):
+        import tempfile
+        import continuum.config as C
+        from continuum import indexer
+        with tempfile.TemporaryDirectory() as t:
+            C.DEFAULT_CONFIG_PATH = __import__("pathlib").Path(t) / "c.json"
+            be = self._be(t)
+            self._seed(be)
+            r = indexer.build_fast_index(be.conn)
+            self.assertEqual(r["triggers"], 3, "必须建 3 支触发器")
+            C.set_mode("fast")
+            hits = be.search_content("XUNIQ7", limit=50)
+            self.assertTrue(any("XUNIQ7" in h["content"] for h in hits))
+            be.close()
+
+    def test_new_messages_are_indexed_after_switch(self):
+        """★ 关键风险：切换后新增的消息必须能被检索（触发器契约）。"""
+        import tempfile
+        import continuum.config as C
+        from continuum import indexer
+        from continuum.udf import UDFMessage
+        with tempfile.TemporaryDirectory() as t:
+            C.DEFAULT_CONFIG_PATH = __import__("pathlib").Path(t) / "c.json"
+            be = self._be(t)
+            self._seed(be, 5)
+            indexer.build_fast_index(be.conn)
+            C.set_mode("fast")
+            # 切换**之后**新增（模拟用户使用中继续对话）
+            sid = be.ensure_session("t", "s1")
+            be.append_messages(sid, [UDFMessage(
+                ts="2026-02-01T00:00:00.000Z", role="user", host="t",
+                session_id="s1", content="切换之后的新消息 NEWMSG_TOKEN")])
+            hits = be.search_content("NEWMSG_TOKEN", limit=50)
+            self.assertTrue(any("NEWMSG_TOKEN" in h["content"] for h in hits),
+                            "切换后新消息未被索引（触发器失效）")
+            be.close()
+
+    def test_switch_back_to_lite_is_reversible(self):
+        import tempfile
+        import continuum.config as C
+        from continuum import indexer
+        with tempfile.TemporaryDirectory() as t:
+            C.DEFAULT_CONFIG_PATH = __import__("pathlib").Path(t) / "c.json"
+            be = self._be(t)
+            self._seed(be)
+            indexer.build_fast_index(be.conn)
+            C.set_mode("fast")
+            r = indexer.drop_fast_index(be.conn)
+            C.set_mode("lite")
+            self.assertTrue(r["fts_dropped"])
+            self.assertFalse(indexer.fts_ready(be.conn))
+            # 回 lite 后仍能检索（原文未动）
+            hits = be.search_content("XUNIQ3", limit=50)
+            self.assertTrue(any("XUNIQ3" in h["content"] for h in hits))
+            # 触发器也被清理
+            trig = be.conn.execute(
+                "SELECT COUNT(*) FROM sqlite_master WHERE type='trigger' AND name LIKE 'messages_norm_%'"
+            ).fetchone()[0]
+            self.assertEqual(trig, 0)
+            be.close()
+
+    def test_switch_idempotent(self):
+        import tempfile
+        import continuum.config as C
+        from continuum import indexer
+        with tempfile.TemporaryDirectory() as t:
+            C.DEFAULT_CONFIG_PATH = __import__("pathlib").Path(t) / "c.json"
+            be = self._be(t)
+            self._seed(be, 5)
+            indexer.build_fast_index(be.conn)
+            r2 = indexer.build_fast_index(be.conn)      # 幂等：不重复回填
+            self.assertEqual(r2["filled"], 0)
+            st = indexer.index_status(be.conn, "fast")
+            self.assertTrue(st["consistent"])
+            be.close()
