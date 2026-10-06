@@ -357,7 +357,11 @@ class TestRecallIndexModes(unittest.TestCase):
         import continuum.config as C
         from continuum import indexer
         with tempfile.TemporaryDirectory() as t:
-            C.DEFAULT_CONFIG_PATH = __import__("pathlib").Path(t) / "c.json"
+            import os as _os
+            import unittest.mock as _mock
+            _ctx = _mock.patch.dict(_os.environ, {"CONTINUUM_CONFIG": str(__import__("pathlib").Path(t) / "c.json")})
+            _ctx.start()
+            self.addCleanup(_ctx.stop)
             be = self._be(t)
             self._seed(be)
             r = indexer.build_fast_index(be.conn)
@@ -374,7 +378,11 @@ class TestRecallIndexModes(unittest.TestCase):
         from continuum import indexer
         from continuum.udf import UDFMessage
         with tempfile.TemporaryDirectory() as t:
-            C.DEFAULT_CONFIG_PATH = __import__("pathlib").Path(t) / "c.json"
+            import os as _os
+            import unittest.mock as _mock
+            _ctx = _mock.patch.dict(_os.environ, {"CONTINUUM_CONFIG": str(__import__("pathlib").Path(t) / "c.json")})
+            _ctx.start()
+            self.addCleanup(_ctx.stop)
             be = self._be(t)
             self._seed(be, 5)
             indexer.build_fast_index(be.conn)
@@ -394,7 +402,11 @@ class TestRecallIndexModes(unittest.TestCase):
         import continuum.config as C
         from continuum import indexer
         with tempfile.TemporaryDirectory() as t:
-            C.DEFAULT_CONFIG_PATH = __import__("pathlib").Path(t) / "c.json"
+            import os as _os
+            import unittest.mock as _mock
+            _ctx = _mock.patch.dict(_os.environ, {"CONTINUUM_CONFIG": str(__import__("pathlib").Path(t) / "c.json")})
+            _ctx.start()
+            self.addCleanup(_ctx.stop)
             be = self._be(t)
             self._seed(be)
             indexer.build_fast_index(be.conn)
@@ -418,7 +430,11 @@ class TestRecallIndexModes(unittest.TestCase):
         import continuum.config as C
         from continuum import indexer
         with tempfile.TemporaryDirectory() as t:
-            C.DEFAULT_CONFIG_PATH = __import__("pathlib").Path(t) / "c.json"
+            import os as _os
+            import unittest.mock as _mock
+            _ctx = _mock.patch.dict(_os.environ, {"CONTINUUM_CONFIG": str(__import__("pathlib").Path(t) / "c.json")})
+            _ctx.start()
+            self.addCleanup(_ctx.stop)
             be = self._be(t)
             self._seed(be, 5)
             indexer.build_fast_index(be.conn)
