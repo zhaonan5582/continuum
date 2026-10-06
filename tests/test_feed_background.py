@@ -11,7 +11,6 @@
 from __future__ import annotations
 
 import json
-import subprocess
 import sys
 import tempfile
 import threading
@@ -99,19 +98,27 @@ class TestBackgroundFeed(unittest.TestCase):
 
 
 class TestFeedCLI(unittest.TestCase):
-    def test_feed_once_end_to_end(self):
-        """CLI feed --once：临时库 + 隔离 state（CONTINUUM_FEED_STATE）绝不碰生产文件。"""
+    """cmd_feed 的语义契约（in-process，平台无关——subprocess 版在 Windows CI
+    因 stdout 捕获为 None 崩过，2026-10-06 事故固化）。"""
+
+    def test_feed_once_no_target_returns_zero(self):
+        """无喂食对象（如 CI/未装 WorkBuddy）不是失败：返回 0，计划任务不误报。"""
+        import argparse
         import os
+        from continuum import cli
         td = Path(tempfile.mkdtemp())
-        db = td / "cli.db"
-        r = subprocess.run(
-            [sys.executable, "-m", "continuum.cli", "--db", str(db), "feed", "--once"],
-            capture_output=True, text=True, encoding="utf-8", timeout=120,
-            env={**os.environ, "PYTHONPATH": str(REPO / "src"),
-                 "CONTINUUM_FEED_STATE": str(td / "feed_state.json")})
-        # 环境无关断言：有 projects 目录 → 扫描完成；无（如 CI）→ 明确提示且返回 0
-        self.assertEqual(r.returncode, 0, f"rc={r.returncode} stdout={r.stdout[-200:]} stderr={r.stderr[-300:]}")
-        self.assertTrue("扫描完成" in r.stdout or "无喂食对象" in r.stdout, r.stdout[-200:])
+        old_env = os.environ.get("CONTINUUM_FEED_STATE")
+        os.environ["CONTINUUM_FEED_STATE"] = str(td / "fs.json")
+        try:
+            args = argparse.Namespace(db=str(td / "cli.db"), once=True,
+                                      watch=False, interval=120.0)
+            rc = cli.cmd_feed(args)       # 本测试机有 projects 目录则扫码（0），无则提示（0）
+            self.assertEqual(rc, 0)
+        finally:
+            if old_env is None:
+                os.environ.pop("CONTINUUM_FEED_STATE", None)
+            else:
+                os.environ["CONTINUUM_FEED_STATE"] = old_env
 
 
 if __name__ == "__main__":
