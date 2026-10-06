@@ -74,8 +74,9 @@ class ShellHandler(BaseHTTPRequestHandler):
                 self.connection.settimeout(None)
             except (OSError, ValueError):
                 pass
+        if not data:
+            return {}                       # 读尽/空体：视为无参数，绝不抛
         return json.loads(data.decode("utf-8"))
-        return json.loads(self.rfile.read(length).decode("utf-8"))
 
     # ---- 路由 ----
 
@@ -143,7 +144,9 @@ class ShellHandler(BaseHTTPRequestHandler):
                 elif path == "/api/extract":
                     self._json(self.api_extract(body))
                 elif path == "/api/doctor":
-                    self._json(self.api_doctor(self._body() if self.headers.get("Content-Length") else {}))
+                    # 复用 do_POST 开头已读好的 body（二次 _body() 会读尽返回空 →
+                    # lang 参数丢失 → 英文界面出中文；2026-10-06 通读实测实锤）
+                    self._json(self.api_doctor(body))
                 elif path == "/api/license":
                     self._json(self.api_license_activate(body))
                 else:
@@ -221,10 +224,12 @@ class ShellHandler(BaseHTTPRequestHandler):
         total = self.srv.be.conn.execute(
             "SELECT COUNT(*) c FROM messages WHERE session_id=?", (session_id,)
         ).fetchone()["c"]
+        # LIKE 通配符转义：q 含 % / _ 时不得放大为全匹配（2026-10-06 通读实锤）
+        q_esc = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
         rows = self.srv.be.conn.execute(
             "SELECT id, ts, role, content FROM messages WHERE session_id=?"
-            " AND content LIKE ? ORDER BY seq LIMIT ? OFFSET ?",
-            (session_id, f"%{q}%" if q else "%", limit, offset)).fetchall()
+            " AND content LIKE ? ESCAPE '\\' ORDER BY seq LIMIT ? OFFSET ?",
+            (session_id, f"%{q_esc}%" if q else "%", limit, offset)).fetchall()
         return {"total": total, "offset": offset, "limit": limit,
                 "messages": [{"id": r["id"], "ts": r["ts"], "role": r["role"],
                               "content": r["content"]} for r in rows]}

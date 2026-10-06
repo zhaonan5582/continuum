@@ -183,6 +183,14 @@ class TestShellAPI(unittest.TestCase):
         self.assertEqual(d2["current"]["name"], "小陈")
         self.assertIn("v2", d2["current"]["snapshot_md"])
 
+    def test_doctor_lang_flows_through_http(self):
+        """体检输出语言随请求参数（2026-10-06 通读实锤：_body 二次读取吃空 body →
+        lang 丢失 → 英文界面出中文）。"""
+        d = self._post("/api/doctor", {"lang": "en"})
+        self.assertIn("Config files", d["output"])
+        d = self._post("/api/doctor", {"lang": "zh"})
+        self.assertIn("配置文件", d["output"])
+
     def test_toggle_redline(self):
         d = self._post("/api/redlines",
                        {"pattern": "legacy", "statement": "旧红线", "action": "block"})
