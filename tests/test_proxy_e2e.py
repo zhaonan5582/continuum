@@ -68,20 +68,26 @@ class TestProxyE2E(unittest.TestCase):
             stderr=subprocess.PIPE, env=env, cwd=str(REPO))
         self.base = f"http://127.0.0.1:{self.px_port}"
         deadline = time.time() + 15
+        attempts = 0
         while time.time() < deadline:
+            attempts += 1
+            print(f"[proxy-e2e] 就绪探测 #{attempts} ({time.strftime('%H:%M:%S')})",
+                  flush=True)
             try:
                 req = urllib.request.Request(self.base + "/v1/chat/completions",
                                              data=json.dumps({"messages": []}).encode(),
                                              headers={"Content-Type": "application/json"})
                 with urllib.request.urlopen(req, timeout=3) as r:
                     if r.status == 200:
+                        print("[proxy-e2e] proxy 就绪", flush=True)
                         break
-            except Exception:
+            except Exception as e:
+                print(f"[proxy-e2e] 探测异常: {type(e).__name__}: {e}", flush=True)
                 time.sleep(0.5)
         else:
             err = self.proc.stderr.read() if self.proc.stderr else b""
             self.up.shutdown()
-            raise RuntimeError(f"proxy 未就绪: {err[:300]}")
+            raise RuntimeError(f"proxy 未就绪 (attempts={attempts}): {err[:500]}")
 
     def tearDown(self):
         self.proc.terminate()
