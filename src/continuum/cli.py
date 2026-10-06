@@ -13,6 +13,7 @@
 - import workbuddy 从 WorkBuddy jsonl 导入会话（P1 验收通道）
 - backup           备份记忆库
 - feed             喂食器：主动扫描会话文件增量入库（--once / --watch）
+- agents           探测本机 agent 与可用接入机制（只读视图）
 """
 
 from __future__ import annotations
@@ -266,6 +267,32 @@ def _shell_autostart_uninstall() -> int:
     return 0
 
 
+def cmd_agents(args) -> int:
+    """探测本机已安装的 agent 与可用接入机制（只读）——`continuum setup` 的前置视图。
+
+    docs/10：普适性 = 注册表（已知）+ 嗅探（未知）+ 手动（兜底）；
+    本命令展示第一层（注册表探测）结果。"""
+    from continuum.agents import detect_all
+
+    rows = detect_all()
+    print("探测本机 agent（只读）：")
+    found_any = False
+    for d in rows:
+        mark = "[+]" if d.found else "[ ]"
+        if d.found:
+            found_any = True
+        print(f"  {mark} {d.profile.display:<14} {d.summary}")
+        if d.found and d.profile.note:
+            print(f"      note: {d.profile.note}")
+    if not found_any:
+        print("  （未发现已知宿主——可用 continuum import-workbuddy 手动导入会话文件）")
+    print()
+    print("接入机制说明（docs/10）：mcp=MCP 直连 / session-file=会话文件喂食 /")
+    print("                      hooks=宿主钩子 / prompt=提示词片段 / proxy=LLM 代理")
+    print("下一步：continuum setup 一键接入（自动配置全部发现的宿主）")
+    return 0
+
+
 def cmd_feed(args) -> int:
     """喂食器 CLI（真喂食的第三种触达形态）：
     --once（默认）：扫一次退出——供系统计划任务/手动调用（无常驻进程）。
@@ -484,6 +511,9 @@ def build_parser() -> argparse.ArgumentParser:
                     help="注册登录自启（后台常驻，无需再开命令行窗口）")
     sh.add_argument("--uninstall-autostart", action="store_true", help="移除登录自启")
     sh.set_defaults(func=cmd_shell)
+
+    ag = sub.add_parser("agents", help="探测本机 agent 与可用接入机制（只读）")
+    ag.set_defaults(func=cmd_agents)
 
     fd = sub.add_parser("feed", help="喂食器：主动扫描宿主会话文件增量入库（真喂食）")
     fd.add_argument("--db", default=argparse.SUPPRESS,
