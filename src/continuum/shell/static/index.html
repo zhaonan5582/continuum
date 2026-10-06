@@ -13,15 +13,17 @@
   * { box-sizing: border-box; margin: 0; }
   body { background: var(--bg); color: var(--text);
          font: 14px/1.6 "Segoe UI", "Microsoft YaHei", sans-serif; }
-  header { background: var(--card); border-bottom: 1px solid var(--line);
-           padding: 14px 24px; display: flex; align-items: center; gap: 18px; }
+  header { position: sticky; top: 0; z-index: 10; background: var(--card);
+           border-bottom: 1px solid var(--line); padding: 14px 24px;
+           display: flex; align-items: center; gap: 18px; }
   header h1 { font-size: 17px; color: var(--brand); }
   header .sub { color: var(--muted); font-size: 12px; }
   nav { margin-left: auto; display: flex; gap: 6px; }
-  nav button { border: none; background: transparent; padding: 7px 14px; border-radius: 8px;
-               cursor: pointer; font-size: 14px; color: var(--muted); }
-  nav button.on { background: var(--brand-weak); color: var(--brand); font-weight: 600; }
+  nav a { text-decoration: none; padding: 7px 14px; border-radius: 8px;
+          font-size: 13px; color: var(--muted); }
+  nav a:hover { background: var(--brand-weak); color: var(--brand); }
   main { max-width: 1060px; margin: 22px auto; padding: 0 20px; }
+  section { scroll-margin-top: 70px; }
   .card { background: var(--card); border-radius: var(--radius);
           box-shadow: 0 1px 3px rgba(15,23,42,.06), 0 4px 14px rgba(15,23,42,.04);
           padding: 18px 20px; margin-bottom: 16px; }
@@ -56,19 +58,18 @@
   .msg { padding: 8px 12px; border-radius: 8px; margin: 8px 0; font-size: 13px; display: none; }
   .msg.ok { background: #dcfce7; color: var(--ok); display: block; }
   .msg.bad { background: #fee2e2; color: var(--bad); display: block; }
-  .hide { display: none !important; }
 </style>
 </head>
 <body>
 <header>
   <h1>Continuum</h1>
   <span class="sub">跨 agent 持久记忆与连续人格层 · <span id="dbpath"></span></span>
-  <nav id="tabs">
-    <button data-t="overview" class="on">总览</button>
-    <button data-t="persona">人格</button>
-    <button data-t="redlines">红线</button>
-    <button data-t="recall">记忆检索</button>
-    <button data-t="doctor">体检</button>
+  <nav>
+    <a href="#v-overview">总览</a>
+    <a href="#v-persona">人格</a>
+    <a href="#v-redlines">红线</a>
+    <a href="#v-recall">检索</a>
+    <a href="#v-doctor">体检</a>
   </nav>
 </header>
 <main>
@@ -92,7 +93,7 @@
   </section>
 
   <!-- 人格 -->
-  <section id="v-persona" class="hide">
+  <section id="v-persona">
     <div class="card"><h2>当前人格</h2><div id="persona-cur" class="muted">加载中…</div></div>
     <div class="card"><h2>新建人格版本（覆盖式定版，历史可回溯）</h2>
       <textarea id="persona-text" placeholder="人格状态块：身份、语气、协作默契、硬规矩……"></textarea>
@@ -112,7 +113,7 @@
   </section>
 
   <!-- 红线 -->
-  <section id="v-redlines" class="hide">
+  <section id="v-redlines">
     <div class="card"><h2>红线列表</h2>
       <table id="rl-tab"><thead><tr><th>#</th><th>状态</th><th>动作</th><th>范围</th><th>陈述</th><th>pattern</th><th>用例</th><th></th></tr></thead><tbody></tbody></table>
       <div style="margin-top:10px"><button class="mini" onclick="runGuardTest()">▶ 执行正反测试集（防误伤回归）</button></div>
@@ -132,7 +133,7 @@
   </section>
 
   <!-- 检索 -->
-  <section id="v-recall" class="hide">
+  <section id="v-recall">
     <div class="card"><h2>记忆检索（跨会话，每条带证据等级与原文指针）</h2>
       <div class="row"><input type="text" id="rc-q" placeholder="关键词，如：参照站 / 设备管理 / 粗集料检测" onkeydown="if(event.key==='Enter')doRecall()">
         <button class="pri" style="flex:0 0 auto" onclick="doRecall()">检索</button></div>
@@ -140,7 +141,7 @@
   </section>
 
   <!-- 体检 -->
-  <section id="v-doctor" class="hide">
+  <section id="v-doctor">
     <div class="card"><h2>一键体检（配置 / 记忆库 / server 握手 / 生效指引）</h2>
       <button class="pri" onclick="runDoctor()">运行体检</button>
       <pre id="dt-out" class="hide"></pre></div>
@@ -158,14 +159,6 @@ async function api(path, body) {
   if (d.error) throw new Error(d.error);
   return d;
 }
-document.getElementById("tabs").addEventListener("click", e => {
-  if (e.target.tagName !== "BUTTON") return;
-  document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b === e.target));
-  document.querySelectorAll("main > section").forEach(s => s.classList.add("hide"));
-  document.getElementById("v-" + e.target.dataset.t).classList.remove("hide");
-  if (e.target.dataset.t === "persona") loadPersona();
-  if (e.target.dataset.t === "redlines") loadRedlines();
-});
 
 async function loadOverview() {
   const d = await api("/api/overview");
@@ -179,7 +172,7 @@ async function loadOverview() {
     `<tr><td>${x.id}</td><td>${esc((x.external_id||"").slice(0,18))}…</td>
      <td>${esc((x.project_id||"").slice(0,28))}</td><td>${x.messages}</td>
      <td>${esc(x.title||"")}</td></tr>`).join("");
-  $("#ov-hint").textContent = "消息按会话独立存储、永不混合；记忆条目跨会话汇总且每条带溯源指针；人格为全局单份（版本化，人格页维护）。";
+  $("#ov-hint").textContent = "消息按会话独立存储、永不混合；记忆条目跨会话汇总且每条带溯源指针；人格为全局单份（版本化，下方人格块维护）。";
 }
 async function doExtract() {
   try {
@@ -269,6 +262,8 @@ async function runDoctor() {
   } catch (e) { msg(e.message, false); }
 }
 loadOverview();
+loadPersona();
+loadRedlines();
 </script>
 </body>
 </html>
