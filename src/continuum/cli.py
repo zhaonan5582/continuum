@@ -402,6 +402,14 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Windows GBK/cp936 终端下输出 ✓/⚠ 等字符会 UnicodeEncodeError——
+    # 跟随终端编码但无法编码的字符降级为 ?，绝不因输出崩溃（商业化排查 2026-10-06）
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            try:
+                stream.reconfigure(errors="replace")
+            except (OSError, ValueError):
+                pass
     args = build_parser().parse_args(argv)
     db = getattr(args, "db", None)
     if db:
