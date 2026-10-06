@@ -154,18 +154,21 @@ class SQLiteBackend(StorageBackend):
             for r in rows
         ]
 
-    def fetch_messages_since(self, since_ts: str | None = None, limit: int = 200) -> list[tuple[int, UDFMessage]]:
+    def fetch_messages_since(self, since_ts: str | None = None, limit: int = 200,
+                             host_agent: str | None = None) -> list[tuple[int, UDFMessage]]:
+        host_cond = (" AND host = ?" if host_agent else "")
+        host_params: list = [host_agent] if host_agent else []
         if since_ts:
             rows = self.conn.execute(
                 "SELECT id, ts, role, host, session_id, content FROM messages"
-                " WHERE ts >= ? ORDER BY ts LIMIT ?",
-                (since_ts, limit),
+                " WHERE ts >= ?" + host_cond + " ORDER BY ts LIMIT ?",
+                [since_ts] + host_params + [limit],
             ).fetchall()
         else:
             rows = self.conn.execute(
                 "SELECT id, ts, role, host, session_id, content FROM messages"
-                " ORDER BY ts DESC LIMIT ?",
-                (limit,),
+                " WHERE 1=1" + host_cond + " ORDER BY ts DESC LIMIT ?",
+                host_params + [limit],
             ).fetchall()
             rows = list(reversed(rows))
         return [

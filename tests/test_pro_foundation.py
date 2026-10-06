@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 Continuum contributors
 # SPDX-License-Identifier: AGPL-3.0-only
-"""Pro 地基测试：license 正式模块 + recall 宿主作用域。"""
+"""Pro 地基测试：license 正式模块 + recall 宿主作用域 + 构建裁剪契约。"""
 from __future__ import annotations
 
 import sys
@@ -21,17 +21,16 @@ from continuum.license import (  # noqa: E402
 )
 from continuum.storage import SQLiteBackend  # noqa: E402
 from continuum.server import ContinuumServer  # noqa: E402
-from continuum.server.tools import AppendRequest  # noqa: E402
+from continuum.server.tools import AppendRequest, ExtractScope  # noqa: E402
 from continuum.udf import UDFMessage  # noqa: E402
 
 MIGRATIONS = REPO / "src" / "continuum" / "storage" / "migrations" / "sql"
 
 
-def _good_key(seed: int = 0) -> str:
+def _good_key() -> str:
     """构造校验和合法的 16 位 key（骨架算法：末位 = 前15位 ord 和 % 36）。"""
-    base = "AAAA-BBBB-CCCC-DD"
-    digits = base.replace("-", "") + "E"
-    chk = (sum(ord(c) for c in digits[:15]) + seed) % 36
+    digits = "AAAABBBBCCCCDDE"
+    chk = sum(ord(c) for c in digits[:15]) % 36
     last = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"[chk]
     return "-".join([digits[0:4], digits[4:8], digits[8:12], digits[12:15] + last])
 
@@ -56,8 +55,7 @@ class TestLicense(unittest.TestCase):
         self.assertIn("格式", err)
 
     def test_activate_pro_unlocks_cross_host(self):
-        key = _good_key()
-        st = activate(key, "pro", path=self.path)
+        st = activate(_good_key(), "pro", path=self.path)
         self.assertTrue(st.activated)
         self.assertEqual(st.plan, "pro")
         self.assertTrue(is_pro(self.path))
@@ -78,7 +76,7 @@ class TestLicense(unittest.TestCase):
 
 
 class TestRecallHostScope(unittest.TestCase):
-    """宿主作用域过滤：免费版单宿主隔离 / Pro 跨宿主的地基能力。"""
+    """宿主作用域过滤：免费版单宿主隔离 / Pro 跨宿主汇聚的地基能力。"""
 
     def setUp(self):
         self.be = SQLiteBackend(":memory:", MIGRATIONS)
@@ -91,9 +89,7 @@ class TestRecallHostScope(unittest.TestCase):
                 host_agent=host, external_session_id=sid,
                 messages=(UDFMessage(ts="2026-01-01T00:00:00.000Z", role="user",
                                      host=host, session_id=sid, content=content),)))
-        # 沉淀：原文 → memories（无 judge 中文启发式 + confirm 直接 active）
-        from continuum.server.tools import ExtractScope
-        self.srv.memory_extract(ExtractScope(confirm=True))
+        self.srv.memory_extract(ExtractScope(confirm=True))   # 沉淀为 active
 
     def tearDown(self):
         self.be.close()
@@ -101,8 +97,8 @@ class TestRecallHostScope(unittest.TestCase):
     def test_global_recall_sees_both(self):
         r_wb = self.srv.memory_recall("通道1", limit=10)
         r_cx = self.srv.memory_recall("严格模式", limit=10)
-        self.assertTrue(any("工作台" in i.statement for i in r_wb.items), "workbuddy 记忆可召回")
-        self.assertTrue(any("严格模式" in i.statement for i in r_cx.items), "codex 记忆可召回")
+        self.assertTrue(any("工作台" in i.statement for i in r_wb.items), "workbuddy 可召回")
+        self.assertTrue(any("严格模式" in i.statement for i in r_cx.items), "codex 可召回")
 
     def test_host_scope_filters(self):
         r_wb = self.srv.memory_recall("通道1", limit=10, host_scope="workbuddy")
@@ -112,6 +108,26 @@ class TestRecallHostScope(unittest.TestCase):
         # 作用域互斥：workbuddy 作用域查不到 codex 的内容
         r_cross = self.srv.memory_recall("严格模式", limit=10, host_scope="workbuddy")
         self.assertFalse(any("严格模式" in i.statement for i in r_cross.items))
+
+
+class TestBuildFlagsContract(unittest.TestCase):
+    """构建裁剪契约（docs/03）：pro.* 功能随 continuum.pro 包注入，
+    free 构建（本仓库）不含 pro 代码——功能缺失而非上锁。"""
+
+    def test_free_build_pro_features_absent(self):
+        from continuum.buildflags import detect_build, is_feature_available
+        info = detect_build()
+        if info.pro_available:
+            self.skipTest("pro 构建环境")
+        self.assertEqual(info.edition, "free")
+        self.assertFalse(is_feature_available("pro.cross_host"))
+        self.assertFalse(is_feature_available("pro.anything"))
+
+    def test_core_always_available(self):
+        from continuum.buildflags import is_feature_available
+        self.assertTrue(is_feature_available("core.memory"))
+        self.assertTrue(is_feature_available("core.persona"))
+        self.assertFalse(is_feature_available("unknown.feature"))
 
 
 if __name__ == "__main__":

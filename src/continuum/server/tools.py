@@ -311,15 +311,17 @@ class ContinuumServer:
         return AuditResult(entries=tuple(entries), total_matched=total)
 
     # ---- P2 · 已实装 ----
-    def memory_assemble(self, project_id: str | None = None) -> AssemblePackage:
+    def memory_assemble(self, project_id: str | None = None,
+                        host_scope: str | None = None) -> AssemblePackage:
         """冷启动装配包（第一防线）：persona 最新版 + L0 + 当前项目 L1 + 最近现场。
-        总预算 ≤8K token，超预算按「最近现场 → 事实」顺序剪（红线/决策/约定不动）。"""
+        总预算 ≤8K token，超预算按「最近现场 → 事实」顺序剪（红线/决策/约定不动）。
+        host_scope：宿主作用域——None=全局（Pro 跨宿主视图），指定宿主=仅该宿主的现场。"""
         from continuum.snapshot import estimate_tokens, materialize_l0, materialize_l1
 
         persona_md = self.persona_current_md()
         l0 = materialize_l0(self.be, persona_text=persona_md)
         l1 = materialize_l1(self.be, project_id)
-        recent_rows = self.be.fetch_messages_since(None, limit=20)
+        recent_rows = self.be.fetch_messages_since(None, limit=20, host_agent=host_scope)
         recent = tuple(m.content for _, m in recent_rows)
 
         parts_used = estimate_tokens(persona_md) + estimate_tokens(l0) + estimate_tokens(l1)
