@@ -175,7 +175,11 @@ class ShellHandler(BaseHTTPRequestHandler):
                 "SELECT COUNT(*) c FROM redlines WHERE enabled=1").fetchone()["c"],
             "persona_version": (be.persona_current() or {}).get("version"),
         }
-        return {"stats": stats, "sessions": sessions, "db_path": self.db_path}
+        from continuum.license import features_unlocked, load_state
+        st = load_state()
+        return {"stats": stats, "sessions": sessions, "db_path": self.db_path,
+                "plan": st.plan, "activated": st.activated,
+                "features": list(features_unlocked())}
 
     def api_persona_get(self) -> dict:
         be = self.srv.be
@@ -308,39 +312,26 @@ class ShellHandler(BaseHTTPRequestHandler):
             return {"error": "体检执行失败"}
         return {"output": result["output"], "code": result["code"]}
 
-    # ---- 授权（骨架：本地格式校验 + 存储；在线激活/签名校验随商业化接入） ----
-
-    _LICENSE_PATH = Path.home() / ".continuum" / "license.json"
-
-    def _license_state(self) -> dict:
-        try:
-            return json.loads(self._LICENSE_PATH.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            return {"activated": False}
+    # ---- 授权（正式模块 continuum.license；真签名校验随商业化接入） ----
 
     def api_license_get(self) -> dict:
-        st = self._license_state()
-        key = st.get("key") or ""
-        masked = "-".join(key[i:i + 4] for i in range(0, len(key), 4)) if key else ""
-        return {"activated": bool(st.get("activated")),
-                "key_masked": masked, "plan": st.get("plan"),
-                "activated_at": st.get("activated_at")}
+        from continuum.license import features_unlocked, load_state
+        st = load_state()
+        return {"activated": st.activated, "plan": st.plan,
+                "key_masked": st.key_masked, "activated_at": st.activated_at,
+                "features": list(features_unlocked())}
 
     def api_license_activate(self, body: dict) -> dict:
+        from continuum.license import activate
         key = (body.get("key") or "").strip().upper().replace(" ", "")
-        digits = key.replace("-", "")
-        # 骨架校验：格式 4×4 + 末位为前 15 位校验和（真签名校验随商业化接入，诚实标注）
-        import re as _re
-        if not _re.fullmatch(r"[A-Z0-9]{4}(-[A-Z0-9]{4}){3}", key):
-            return {"error": "注册码格式应为 XXXX-XXXX-XXXX-XXXX"}
-        if sum(ord(c) for c in digits[:15]) % 36 != int(digits[15], 36):
-            return {"error": "注册码校验失败（校验位不符）"}
-        from datetime import datetime, timezone
-        st = {"activated": True, "key": key, "plan": body.get("plan") or "pro",
-              "activated_at": datetime.now(timezone.utc).isoformat()}
-        self._LICENSE_PATH.parent.mkdir(parents=True, exist_ok=True)
-        self._LICENSE_PATH.write_text(json.dumps(st, ensure_ascii=False), encoding="utf-8")
-        return {"activated": True, "plan": st["plan"]}
+        plan = body.get("plan") or "pro"
+        if plan not in ("pro", "pro_cloud"):
+            return {"error": "plan 必须是 pro / pro_cloud"}
+        try:
+            st = activate(key, plan)
+        except ValueError as e:
+            return {"error": str(e)}
+        return {"activated": st.activated, "plan": st.plan}
 
 
 def make_server(srv: ContinuumServer, db_path: str, host: str = "127.0.0.1",

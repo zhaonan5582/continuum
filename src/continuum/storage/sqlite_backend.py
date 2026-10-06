@@ -177,7 +177,8 @@ class SQLiteBackend(StorageBackend):
             for r in rows
         ]
 
-    def search_content(self, query: str, limit: int = 20) -> list[dict]:
+    def search_content(self, query: str, limit: int = 20,
+                       host_agent: str | None = None) -> list[dict]:
         """FTS5 trigram 检索（原文寻回兜底通道）。
 
         v1.5 修正：**引号短语查询**——`"片段"` 对 trigram 索引即连续子串精确匹配
@@ -189,13 +190,20 @@ class SQLiteBackend(StorageBackend):
         # 超长串（>40 字）降级为头部短语（FTS 查询串过长性能退化）
         phrase = q[:40] if len(q) > 40 else q
         match_expr = f'"{phrase}"'
+        host_filter = ""
+        params: list = [match_expr]
+        if host_agent:
+            host_filter = " AND m.session_id IN (SELECT id FROM sessions WHERE host_agent = ?)"
+            params.append(host_agent)
+        params.append(limit)
         try:
             rows = self.conn.execute(
                 "SELECT m.id, m.session_id, m.role, m.ts, m.content,"
                 " snippet(messages_fts, 0, '<<', '>>', '…', 64) AS snip"
                 " FROM messages_fts f JOIN messages m ON m.id = f.rowid"
-                " WHERE messages_fts MATCH ? ORDER BY rank LIMIT ?",
-                (match_expr, limit),
+                " WHERE messages_fts MATCH ?" + host_filter +
+                " ORDER BY rank LIMIT ?",
+                params,
             ).fetchall()
         except sqlite3.OperationalError:
             return []          # FTS 语法边缘（引号/特殊序列），兜底空结果
@@ -304,6 +312,7 @@ class SQLiteBackend(StorageBackend):
         time_to: str | None = None,
         limit: int = 20,
         include_pending: bool = False,
+        host_agent: str | None = None,
     ) -> list[sqlite3.Row]:
         """结构化过滤主力（§5.3）：statement 逐词 LIKE + 类型/时间过滤 + user-stated 优先。
 
@@ -333,6 +342,10 @@ class SQLiteBackend(StorageBackend):
         if time_to:
             conds.append("created_at <= ?")
             params.append(time_to)
+        if host_agent:
+            # 宿主作用域过滤（跨宿主汇聚的地基能力：免费=单宿主隔离，Pro=全局）
+            conds.append("session_id IN (SELECT id FROM sessions WHERE host_agent = ?)")
+            params.append(host_agent)
         params.append(limit)
         return self.conn.execute(
             "SELECT * FROM memories WHERE " + " AND ".join(conds) +

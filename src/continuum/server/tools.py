@@ -242,7 +242,8 @@ class ContinuumServer:
                              produced_pending=0 if scope.confirm else produced,
                              scanned_messages=scanned)
 
-    def memory_recall(self, query: str, time_hint: str | None = None, limit: int = 20) -> RecallResult:
+    def memory_recall(self, query: str, time_hint: str | None = None, limit: int = 20,
+                      host_scope: str | None = None) -> RecallResult:
         """快速路径（无 judge）：结构化过滤主力（memories 逐词匹配 + 类型/时间过滤）
         + FTS 原文兜底。user-stated 优先。停止条件 = 无 judge 固定单轮（增强模式 P2）。"""
         import re as _re
@@ -267,7 +268,8 @@ class ContinuumServer:
         results: list[RecallItem] = []
         seen: set = set()
         if terms:
-            for r in self.be.search_memories(terms, time_from=time_from, limit=limit):
+            for r in self.be.search_memories(terms, time_from=time_from, limit=limit,
+                                             host_agent=host_scope):
                 if r["id"] in seen:
                     continue
                 seen.add(r["id"])
@@ -280,7 +282,7 @@ class ContinuumServer:
             for term in terms:
                 if len(term) < 3:                  # FTS trigram 需 ≥3 字符
                     continue
-                for h in self.be.search_content(term, limit=limit):
+                for h in self.be.search_content(term, limit=limit, host_agent=host_scope):
                     key = ("m", h["id"])
                     if key in seen:
                         continue

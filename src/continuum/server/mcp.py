@@ -110,10 +110,11 @@ def build_mcp_server(cs: ContinuumServer, feed=None):
 
     @mcp.tool()
     @_sync
-    def memory_recall(query: str, time_hint: str | None = None, limit: int = 20) -> dict:
+    def memory_recall(query: str, time_hint: str | None = None, limit: int = 20,
+                      host_scope: str | None = None) -> dict:
         """检索（P1 快速路径：结构化过滤主力；P2 增强：judge 停止判断+相对时间解析）。
         每条结果必带 evidence_level 与原文指针。"""
-        r = cs.memory_recall(query, time_hint=time_hint, limit=limit)
+        r = cs.memory_recall(query, time_hint=time_hint, limit=limit, host_scope=host_scope)
         return {"items": [i.__dict__ for i in r.items], "rounds_used": r.rounds_used,
                 "latency_ms": r.latency_ms, "stopped_by": r.stopped_by}
 
