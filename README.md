@@ -69,9 +69,11 @@ continuum doctor
 ### 红线门禁（机制，不靠 agent 自觉）
 
 ```bash
-continuum redline add --pattern "rm -rf production" --statement "严禁删除生产目录"
-continuum redline test --redline-id 1 --case positive --sample "rm -rf production/data"
-continuum redline test --redline-id 1 --case negative --sample "cat production/notes.txt"
+# pattern 支持"正则优先、非法回退子串"——写动作短语/正则，别写名词（名词会误拦只读操作）
+continuum redline add --pattern "(删除|修改|写入|DELETE|UPDATE)[\\s\\S]{0,20}参照站" \
+    --statement "参照站绝对只读，禁止任何写操作"
+continuum redline test --redline-id 1 --case positive --sample "删除参照站样本表"
+continuum redline test --redline-id 1 --case negative --sample "查询参照站设备列表"
 continuum guard-test        # 正反测试集回归：防误伤
 ```
 

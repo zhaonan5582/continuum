@@ -122,5 +122,33 @@ class TestPersonaEngine(unittest.TestCase):
         self.assertIn("persona v", pkg.persona_md)   # 版本注释标记
 
 
+
+class TestRegexRedline(unittest.TestCase):
+    """pattern 正则优先、非法回退子串（2026-10-06 8100 实测教训：
+    名词 pattern「参照站」会误拦「查询参照站」——pattern 应写动作短语/正则）。"""
+
+    def setUp(self):
+        self.be = SQLiteBackend(":memory:", MIGRATIONS)
+        self.srv = ContinuumServer(self.be)
+
+    def tearDown(self):
+        self.be.close()
+
+    def test_regex_action_pattern(self):
+        self.be.add_redline(
+            pattern=r"(删除|修改|写入|DELETE|UPDATE|INSERT|DROP)[\s\S]{0,20}参照站|参照站[\s\S]{0,20}(删除|修改|写入)",
+            statement="参照站绝对只读", action="block")
+        block = self.srv.memory_guard(Operation(kind="delete", target="DELETE FROM 参照站样本表"))
+        allow = self.srv.memory_guard(Operation(kind="delete", target="查询参照站设备列表"))
+        self.assertEqual(block.verdict, "block")
+        self.assertEqual(allow.verdict, "allow")
+
+    def test_invalid_regex_falls_back_to_substring(self):
+        self.be.add_redline(pattern="rm -rf *[非法", statement="子串回退红线", action="block")
+        v = self.srv.memory_guard(Operation(kind="delete", target="执行 rm -rf *[非法 目录"))
+        self.assertEqual(v.verdict, "block")   # 非法正则 → 子串包含兜底
+
+
+
 if __name__ == "__main__":
     unittest.main()

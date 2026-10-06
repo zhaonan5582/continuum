@@ -442,14 +442,24 @@ class SQLiteBackend(StorageBackend):
         return int(cur.lastrowid)
 
     def match_redlines(self, target: str, project_id: str | None = None) -> list[sqlite3.Row]:
-        """guard 数据查询：enabled 红线中匹配 target 的（pattern 子串 + scope 兼容）。"""
+        """guard 数据查询：enabled 红线中匹配 target 的（scope 兼容）。
+
+        pattern 匹配语义：**正则优先**（re.search），pattern 非法正则时回退子串包含——
+        向后兼容既有子串 pattern；写动作短语（如「删除.*参照站」）而非名词可避免误伤
+        （名词 pattern 会拦下「查询参照站」这类只读操作，2026-10-06 8100 实测教训）。"""
+        import re as _re
+
         rows = self.conn.execute("SELECT * FROM redlines WHERE enabled=1").fetchall()
         out = []
         for r in rows:
             scope = r["scope"]
             if scope.startswith("project:") and scope.split(":", 1)[1] != (project_id or ""):
                 continue
-            if r["pattern"] in target:
+            try:
+                hit = bool(_re.search(r["pattern"], target))
+            except _re.error:
+                hit = r["pattern"] in target
+            if hit:
                 out.append(r)
         return out
 
