@@ -34,9 +34,11 @@
   .run-badge i { width: 8px; height: 8px; border-radius: 50%; background: #22c55e;
                  box-shadow: 0 0 8px #22c55e; animation: pulse 2s infinite; }
   @keyframes pulse { 50% { opacity: .45; } }
-  nav { margin-left: auto; display: flex; gap: 4px; align-items: center; }
-  nav a { text-decoration: none; padding: 6px 13px; border-radius: 9px; font-size: 13px;
-          color: #cbd5e1; transition: .15s; }
+  nav { margin-left: auto; display: flex; gap: 4px; align-items: center;
+        flex-wrap: wrap; justify-content: flex-end; }
+  /* nowrap + shrink:0：空间不足时换行而不是把中文压成竖排（2026-10-06 实测事故） */
+  nav a { text-decoration: none; padding: 6px 11px; border-radius: 9px; font-size: 13px;
+          color: #cbd5e1; transition: .15s; white-space: nowrap; flex-shrink: 0; }
   nav a:hover { color: #fff; background: rgba(255,255,255,.09); }
   .lang-btn { border: 1px solid rgba(255,255,255,.25); background: transparent; color: #cbd5e1;
               border-radius: 8px; padding: 5px 12px; cursor: pointer; font-size: 12px; }
@@ -200,6 +202,18 @@
       <div class="row" style="margin-top:8px"><span class="muted" style="flex:1" data-i18n="hint_expected"></span>
         <button class="pri" style="flex:0 0 auto" onclick="addRt()"><span data-i18n="b_addcase">录入用例</span></button></div></div>
   </section>
+
+  <!-- 工作节奏（数据回馈用户本人） -->
+  <section id="v-workload">
+    <div class="card"><h2><span class="ic">🕐</span><span data-i18n="h_workload">工作节奏</span>
+      <span class="muted" data-i18n="h_workload_sub">（来自你的全部会话时间戳——跨宿主统计）</span></h2>
+      <div id="wl-insights" style="margin-bottom:12px"></div>
+      <div class="stats" id="wl-today"></div>
+      <div id="wl-chart" style="margin-top:14px"></div>
+      <h2 style="margin-top:16px;font-size:13px"><span data-i18n="wl_week">近 7 天</span></h2>
+      <div id="wl-week"></div>
+    </div>
+  </section>
   </div>
 
   <div class="col">
@@ -284,18 +298,6 @@
       <p class="muted" style="margin-top:10px" data-i18n="hint_costcalc"></p>
     </div>
   </section>
-  </section>
-
-  <!-- 工作节奏（数据回馈用户本人） -->
-  <section id="v-workload">
-    <div class="card"><h2><span class="ic">🕐</span><span data-i18n="h_workload">工作节奏</span>
-      <span class="muted" data-i18n="h_workload_sub">（来自你的全部会话时间戳——跨宿主统计）</span></h2>
-      <div id="wl-insights" style="margin-bottom:12px"></div>
-      <div class="stats" id="wl-today"></div>
-      <div id="wl-chart" style="margin-top:14px"></div>
-      <h2 style="margin-top:16px;font-size:13px"><span data-i18n="wl_week">近 7 天</span></h2>
-      <div id="wl-week"></div>
-    </div>
   </section>
 
   <!-- 体检 -->
