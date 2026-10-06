@@ -151,9 +151,9 @@ def cmd_serve(args) -> int:
         return 1
     srv = _open_server(args.db)
     feed = None
-    try:                                # 第 0 扳机接线：常驻 MCP 模式顺带增量喂食
-        from continuum.importers.workbuddy_feed import WorkbuddyFeed
-        feed = WorkbuddyFeed.build_default(srv.be)
+    try:                                # 第 0 扳机接线：常驻 MCP 模式顺带增量喂食（多宿主）
+        from continuum.importers.feed_base import SessionFeeder
+        feed = SessionFeeder.build_default(srv.be)
     except Exception:                   # pragma: no cover - 喂食器失败不影响 serve
         feed = None
     if feed is not None:
@@ -203,9 +203,9 @@ def cmd_shell(args) -> int:
         _redirect_to_log()               # 无控制台场景：stdout/stderr 落盘 ~/.continuum/shell.log
 
     srv = _open_server(args.db)
-    try:                                 # 壳常驻期间也真喂食（与 serve 同款后台线程）
-        from continuum.importers.workbuddy_feed import WorkbuddyFeed
-        feed = WorkbuddyFeed.build_default(srv.be)
+    try:                                 # 壳常驻期间也真喂食（与 serve 同款后台线程，多宿主）
+        from continuum.importers.feed_base import SessionFeeder
+        feed = SessionFeeder.build_default(srv.be)
         if feed is not None:
             feed.start_background(120.0)
     except Exception:                    # pragma: no cover - 喂食失败不影响壳
@@ -299,13 +299,14 @@ def cmd_feed(args) -> int:
     --watch：常驻循环（Ctrl+C 退出）。
     serve/shell 常驻时已自带后台喂食线程，本命令供二者都不开时的兜底。"""
     import time as _time
-    from continuum.importers.workbuddy_feed import WorkbuddyFeed
+    from continuum.importers.feed_base import SessionFeeder
 
     be = _open_backend(args.db)
-    feed = WorkbuddyFeed.build_default(be)
+    feed = SessionFeeder.build_default(be)
     if feed is None:
         # 无喂食对象不是失败：计划任务场景返回 0，避免被系统误标为失败任务
-        print("未找到会话目录 ~/.workbuddy/projects——无喂食对象（正常退出）")
+        print("未发现任何已知宿主的会话目录——无喂食对象（正常退出）；"
+              "可先运行 continuum agents 查看探测结果")
         be.close()
         return 0
     if args.watch:
@@ -318,7 +319,8 @@ def cmd_feed(args) -> int:
             print("\n喂食器已停止。")
     else:
         r = feed.sweep_now()
-        print(f"扫描完成: 新入库 {r.new_messages} 条 / 文件 {r.files_scanned} 个 / "
+        by = " ".join(f"{k}+{v}" for k, v in r.by_host.items()) or "-"
+        print(f"扫描完成: 新入库 {r.new_messages} 条 [{by}] / 文件 {r.files_scanned} 个 / "
               f"老会话标记 {r.old_files_marked} / 幂等跳过 {r.skipped_dedup}")
     be.close()
     return 0

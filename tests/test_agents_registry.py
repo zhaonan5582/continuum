@@ -97,3 +97,74 @@ class TestFullRegistry(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestMultiHostFeed(unittest.TestCase):
+    """N1 多宿主喂食（docs/10）：通用引擎 + 嗅探器。"""
+
+    def _mk_be(self, td):
+        from continuum.storage import SQLiteBackend
+        from pathlib import Path
+        return SQLiteBackend(str(Path(td) / "t.db"), REPO / "src" / "continuum" / "storage" / "migrations" / "sql")
+
+    def test_sniffer_shapes(self):
+        from continuum.importers.sources import _sniff_message
+        # A: type=message 单层
+        self.assertEqual(_sniff_message({"type": "message", "role": "user", "content": "hi"}), ("user", "hi"))
+        # B: codex 双层
+        self.assertEqual(_sniff_message({"type": "response_item", "payload": {"type": "message", "role": "assistant", "content": [{"type": "output_text", "text": "yo"}]}}), ("assistant", "yo"))
+        # C: OpenAI 风格
+        self.assertEqual(_sniff_message({"role": "user", "content": "plain"}), ("user", "plain"))
+        # D: CC 嵌套 message
+        self.assertEqual(_sniff_message({"type": "user", "message": {"role": "user", "content": "cc"}}), ("user", "cc"))
+        # 过滤：system/developer 不算对话；无文本不算
+        self.assertIsNone(_sniff_message({"type": "message", "role": "developer", "content": "x"}))
+        self.assertIsNone(_sniff_message({"type": "world_state", "payload": {}}))
+
+    def test_multihost_sweep(self):
+        import json, tempfile, time
+        from pathlib import Path
+        from continuum.importers.feed_base import SessionFeeder
+        from continuum.importers.sources import GenericJsonlSource, WorkbuddySource
+        with tempfile.TemporaryDirectory() as td:
+            td = Path(td)
+            be = self._mk_be(td)
+            # 宿主 A：workbuddy 格式
+            a = td / "wb" / "ws1"; a.mkdir(parents=True)
+            (a / "s1.jsonl").write_text(json.dumps({"type": "message", "timestamp": int(time.time()*1000), "role": "user", "content": [{"text": "wb 内容"}]}, ensure_ascii=False) + chr(10), encoding="utf-8")
+            # 宿主 B：通用 jsonl 形态（OpenAI 风格）
+            b = td / "other" / "proj"; b.mkdir(parents=True)
+            (b / "s2.jsonl").write_text(json.dumps({"role": "assistant", "content": "other 内容", "timestamp": int(time.time()*1000)}, ensure_ascii=False) + chr(10), encoding="utf-8")
+            feed = SessionFeeder(be, [
+                WorkbuddySource(root=td / "wb"),
+                GenericJsonlSource(host="other-agent", root=td / "other"),
+            ], state_path=td / "state.json")
+            feed._initialized_at = 0
+            r = feed.sweep_now()
+            self.assertEqual(r.new_messages, 2)
+            self.assertEqual(r.by_host.get("workbuddy"), 1)
+            self.assertEqual(r.by_host.get("other-agent"), 1)
+            hosts = {x[0] for x in be.conn.execute("SELECT DISTINCT host_agent FROM sessions")}
+            self.assertEqual(hosts, {"workbuddy", "other-agent"})
+            be.close()
+
+
+    def test_state_save_merges_across_instances(self):
+        """多进程 state 覆盖事故固化：两个实例共享 state，后写者不得抹掉先写者。"""
+        import json, tempfile
+        from pathlib import Path
+        from continuum.importers.feed_base import SessionFeeder
+        with tempfile.TemporaryDirectory() as td:
+            td = Path(td)
+            sp = td / "s.json"
+            be = self._mk_be(td)
+            f1 = SessionFeeder(be, [], state_path=sp)
+            f1._offsets[str(td / "a.jsonl")] = 100
+            f1._save_state()
+            f2 = SessionFeeder(be, [], state_path=sp)     # 模拟另一进程（旧映像）
+            f2._offsets[str(td / "b.jsonl")] = 200
+            f2._save_state()
+            merged = json.loads(sp.read_text(encoding="utf-8"))["offsets"]
+            self.assertIn(str(td / "a.jsonl"), merged, "先写者的登记被覆盖了")
+            self.assertIn(str(td / "b.jsonl"), merged)
+            be.close()
