@@ -170,6 +170,19 @@ class TestShellAPI(unittest.TestCase):
         self.assertTrue(st["activated"])
         self.assertNotIn(key, st["key_masked"])   # 脱敏显示
 
+    def test_persona_version_defaults_to_active_set(self):
+        """定版 name 缺省 = 当前激活套（修 A 套落 default = 版本链断裂，审查实锤）。"""
+        self._post("/api/persona/version",
+                   {"text": "你是老王。", "reason": "初版", "name": "老王"})
+        self._post("/api/persona/version",
+                   {"text": "你是小陈。", "reason": "二版", "name": "小陈"})
+        # 激活的是小陈（后建自动激活）；name 缺省定版必须落进小陈套
+        d = self._post("/api/persona/version", {"text": "你是小陈 v2。", "reason": "修订"})
+        self.assertEqual(d["name"], "小陈")
+        d2 = self._get("/api/persona")
+        self.assertEqual(d2["current"]["name"], "小陈")
+        self.assertIn("v2", d2["current"]["snapshot_md"])
+
     def test_toggle_redline(self):
         d = self._post("/api/redlines",
                        {"pattern": "legacy", "statement": "旧红线", "action": "block"})

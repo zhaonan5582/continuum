@@ -204,7 +204,12 @@ class ShellHandler(BaseHTTPRequestHandler):
         text = (body.get("text") or "").strip()
         if not text:
             return {"error": "text 不能为空"}
-        name = (body.get("name") or "default").strip() or "default"
+        # name 缺省 = 当前激活套（「修改当前人格」是用户直觉——
+        # 修 A 套却落到 default 套 = 版本链断裂，2026-10-06 审查实锤）
+        name = (body.get("name") or "").strip()
+        if not name:
+            cur = self.srv.be.persona_current()
+            name = cur["name"] if cur else "default"
         vid = self.srv.be.persona_create(text, change_reason=body.get("reason") or "壳端录入",
                                          name=name)
         return {"version": vid, "name": name}
