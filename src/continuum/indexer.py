@@ -69,6 +69,79 @@ def needs_repair(conn: sqlite3.Connection) -> bool:
     return fts_count(conn) < filled
 
 
+def db_footprint(conn: sqlite3.Connection) -> dict:
+    """库文件大小与所在盘占用（供"存储 vs 速度"决策的知情展示）。"""
+    import os
+    import shutil
+    path = None
+    try:
+        for r in conn.execute("PRAGMA database_list").fetchall():
+            if r[1] == "main" and r[2]:
+                path = r[2]
+                break
+    except sqlite3.Error:
+        pass
+    if not path or path == ":memory:":
+        return {"db_bytes": 0, "disk_total": 0, "disk_used": 0, "disk_free": 0,
+                "disk_pct": 0.0, "disk": "-"}
+    try:
+        db_bytes = os.path.getsize(path)
+    except OSError:
+        db_bytes = 0
+    # 含 -wal/-shm 的实际占用
+    for suffix in ("-wal", "-shm"):
+        try:
+            db_bytes += os.path.getsize(path + suffix)
+        except OSError:
+            pass
+    try:
+        usage = shutil.disk_usage(path)
+        total, used, free = usage.total, usage.used, usage.free
+        return {"db_bytes": db_bytes, "disk_total": total, "disk_used": used,
+                "disk_free": free, "disk_pct": round(used / total * 100, 1) if total else 0.0,
+                "disk": os.path.splitdrive(os.path.abspath(path))[0] or "-"}
+    except OSError:
+        return {"db_bytes": db_bytes, "disk_total": 0, "disk_used": 0, "disk_free": 0,
+                "disk_pct": 0.0, "disk": "-"}
+
+
+def measure_speed(conn: sqlite3.Connection, samples: int = 8) -> dict:
+    """实测当前模式下的检索速度（取库内真实内容做样本）——给用户看"你现在多快"。"""
+    import re as _re
+    import time
+    rows = conn.execute(
+        "SELECT content FROM messages WHERE LENGTH(content) > 120 ORDER BY RANDOM() LIMIT ?",
+        (samples,)).fetchall()
+    if not rows:
+        return {"avg_ms": None, "samples": 0}
+    frags = []
+    for (c,) in rows:
+        f = c[len(c) // 2:len(c) // 2 + 12].strip()
+        if len(_re.sub(r"\s+", "", f)) >= 6:
+            frags.append(f)
+    if not frags:
+        return {"avg_ms": None, "samples": 0}
+    from continuum.config import get_mode
+    from continuum.indexer import normalize
+    t0 = time.perf_counter()
+    for frag in frags:
+        qn = normalize(frag)
+        probe = qn[:60].replace('"', '""')
+        try:
+            if get_mode() == "fast" and fts_ready(conn):
+                conn.execute(
+                    f"SELECT rowid FROM {FTS_TABLE} WHERE {FTS_TABLE} MATCH ? LIMIT 200",
+                    ('"' + probe + '"',)).fetchall()
+            else:
+                conn.execute(
+                    "SELECT id FROM messages WHERE content LIKE ? ESCAPE '\\' LIMIT 200",
+                    ("%" + qn + "%",)).fetchall()
+        except sqlite3.Error:
+            pass
+    return {"avg_ms": round((time.perf_counter() - t0) * 1000 / len(frags), 1),
+            "samples": len(frags)}
+
+
 def index_status(conn: sqlite3.Connection, mode: str | None) -> dict:
     n = conn.execute("SELECT COUNT(*) FROM messages").fetchone()[0]
     filled = 0
@@ -80,7 +153,8 @@ def index_status(conn: sqlite3.Connection, mode: str | None) -> dict:
     return {"mode": mode, "chosen": mode is not None, "messages": n,
             "norm_filled": filled, "fts_ready": fts_ready(conn),
             "fts_rows": fts_count(conn),
-            "consistent": (mode != "fast") or (not needs_repair(conn))}
+            "consistent": (mode != "fast") or (not needs_repair(conn)),
+            **db_footprint(conn)}
 
 
 def build_fast_index(conn: sqlite3.Connection, batch: int = 500) -> dict:

@@ -310,20 +310,39 @@ def cmd_index(args) -> int:
         mode = args.mode or "status"
         if mode == "status":
             st = indexer.index_status(be.conn, get_mode())
-            if not st["chosen"]:
-                print("召回索引模式：**尚未选择**（当前按现状机制运行）\n")
-                print("两种模式都在，选择权在你（没有预设默认）：")
-                print("  lite — 存储小（基线）· 检索较慢，随库增长线性劣化（越大越慢）")
-                print("  fast — 存储 +78% · 检索快 100 倍以上，且不随库增长劣化\n")
-                print("实测参考（6 万条消息）：lite 291ms / fast 1-2ms")
-                print("选择：continuum index --mode lite   或   continuum index --mode fast")
-                print("（可随时切换，完全可逆：切回 lite 会清除索引，原文一行不动）")
-                return 0
-            print(f"召回索引模式: {st['mode']}（你选择的）")
-            print(f"  消息数: {st['messages']} | 归一列已填: {st['norm_filled']}")
-            print(f"  FTS 索引: {'已建' if st['fts_ready'] else '未建'} | 索引行: {st['fts_rows']}")
-            print(f"  状态一致: {'✓' if st['consistent'] else '⚠ 建议重建（continuum index --mode fast）'}")
-            print("（可随时切换；切回 lite 会清除索引，原文一行不动）")
+
+            def _mb(b):
+                return f"{b/1024/1024:.1f} MB" if b < 1024**3 else f"{b/1024**3:.2f} GB"
+
+            print("【你的库】")
+            print(f"  库文件 {_mb(st['db_bytes'])} | 消息 {st['messages']:,} 条")
+            if st["disk_total"]:
+                print(f"  所在盘 {st['disk']} 已用 {st['disk_pct']}%"
+                      f"（剩余 {_mb(st['disk_free'])}）")
+                if st["disk_pct"] >= 50:
+                    print(f"  ⚠ 所在盘已用 {st['disk_pct']}%（超 50%）——"
+                          f"库持续增长有撑满风险，可考虑分割数据库（按项目拆库）")
+            # 实测速度（当前配置）——"你现在多快"，用户看得见
+            sp = indexer.measure_speed(be.conn)
+            if sp["avg_ms"] is not None:
+                print(f"\n【速度实测】（当前配置，{sp['samples']} 条真实样本）")
+                print(f"  平均 {sp['avg_ms']} ms")
+                if sp["avg_ms"] >= 1000:
+                    print(f"  ⚠ 已超 1 秒体感阈值——建议考虑 fast 模式（切模式后无需改其他）")
+            print()
+            # 两种模式：给数据，不替他选
+            print("【两种模式，你来选】")
+            print(f"  lite — 存储 {_mb(st['db_bytes'])}（当前规模）· 全表扫描，"
+                  f"随库增长线性变慢（实测 6 万条时约 291ms）")
+            print(f"  fast — 存储约 +78% · FTS 索引，速度稳定不随库增长劣化（实测 6 万条 1-2ms）")
+            if st["chosen"]:
+                print(f"\n当前已选：{st['mode']}"
+                      f"（索引{'已建' if st['fts_ready'] else '未建'}，"
+                      f"一致性 {'✓' if st['consistent'] else '⚠ 建议重建：continuum index --mode fast'}）")
+            else:
+                print("\n当前：尚未选择（按现状机制运行；没有预设默认——由你决定）")
+            print("切换：continuum index --mode lite   或   --mode fast")
+            print("（随时可切，完全可逆：切回 lite 会清除索引，原文一行不动）")
             return 0
         if mode not in ("lite", "fast"):
             print(f"模式必须是 lite / fast / status，得到: {mode}")
