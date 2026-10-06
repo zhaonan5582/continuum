@@ -47,10 +47,28 @@ class ShellHandler(BaseHTTPRequestHandler):
         self._send(code, json.dumps(obj, ensure_ascii=False).encode("utf-8"),
                    "application/json; charset=utf-8")
 
+    MAX_BODY = 1_000_000   # 1MB 上限：正常 JSON 远小于此；防 Content-Length 失配/恶意死等
+
     def _body(self) -> dict:
-        length = int(self.headers.get("Content-Length") or 0)
-        if length <= 0:
+        raw = self.headers.get("Content-Length")
+        if not raw:
+            return {}                       # 无长度（chunked 等）一律不读——宁可空不可卡
+        try:
+            length = int(raw)
+        except ValueError:
             return {}
+        if length <= 0 or length > self.MAX_BODY:
+            return {}
+        # 读体前轮询可达性（2s）：body 已发的场景必到；没到 = 客户端/代理异常，
+        # 快速明确失败——绝不永久卡（2026-10-06 实测死锁修复）
+        try:
+            import select as _select
+            ready, _, _ = _select.select([self.rfile], [], [], 2.0)
+            if not ready:
+                return {}
+        except (OSError, ValueError):
+            pass
+        return json.loads(self.rfile.read(length).decode("utf-8"))
         return json.loads(self.rfile.read(length).decode("utf-8"))
 
     # ---- 路由 ----
@@ -261,12 +279,28 @@ class ShellHandler(BaseHTTPRequestHandler):
                 "scanned": r.scanned_messages}
 
     def api_doctor(self, body: dict | None = None) -> dict:
+        import threading as _threading
         from continuum.doctor import run_doctor
         lang = (body or {}).get("lang") or "zh"
-        buf = StringIO()
-        with redirect_stdout(buf):
-            code = run_doctor(lang=lang)
-        return {"output": buf.getvalue(), "code": code}
+        # 体检在独立线程执行：Windows 实测「HTTP 线程读请求体后 spawn 子进程」会死锁
+        # （线程卡死在 socket 读，连带 _LOCK 拖垮后续全部 API）。移线程=隔离该组合。
+        result = {}
+
+        def _work():
+            buf = StringIO()
+            with redirect_stdout(buf):
+                code = run_doctor(lang=lang, spawn_check=False)
+            result["output"] = buf.getvalue()
+            result["code"] = code
+
+        t = _threading.Thread(target=_work, daemon=True)
+        t.start()
+        t.join(timeout=45)
+        if t.is_alive():
+            return {"error": "体检超时（45s），请稍后重试"}
+        if "output" not in result:
+            return {"error": "体检执行失败"}
+        return {"output": result["output"], "code": result["code"]}
 
     # ---- 授权（骨架：本地格式校验 + 存储；在线激活/签名校验随商业化接入） ----
 

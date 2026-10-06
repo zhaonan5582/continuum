@@ -57,11 +57,16 @@ S = {
         "cx_missing": "codex（config.toml）：无 continuum 条目",
         "cx_broken": "codex（config.toml）：TOML 解析失败 {err}",
         "cx_absent": "codex（config.toml）：文件不存在（未接入 codex）",
+        "s3": "[3/3] 轻量自检（核心可导入 + 记忆库可写；完整握手用 CLI：continuum doctor）",
+        "s3_lite_ok": "  ✓ 核心可导入、记忆库可写",
+        "s3_lite_fail": "  ✗ 核心自检失败：{err}",
+        "s3_lite_ok": "核心可导入、记忆库可写",
+        "s3_lite_fail": "  ✗ 核心自检失败：{err}",
         "s2": "[2/3] 记忆库",
         "db_missing": "不存在（首次会由 serve 自动创建）",
         "db_live": "有活动连接（宿主已加载）",
         "db_idle": "当前无活动连接",
-        "s3": "[3/3] server 自检（按 WorkBuddy 配置的确切命令拉起）",
+        "s3_full": "[3/3] server 自检（按 WorkBuddy 配置的确切命令拉起）",
         "hs_ok": "server 握手（配置确切命令）：initialize OK，{ms}",
         "hs_fail": "server 握手失败（配置确切命令）：{err}",
         "spawn_fail": "server 启动失败（配置确切命令）：{err}",
@@ -84,7 +89,9 @@ S = {
         "db_missing": "missing (auto-created by first serve)",
         "db_live": "active connection present (host loaded)",
         "db_idle": "no active connection right now",
-        "s3": "[3/3] Server self-check (spawning with the exact command from WorkBuddy config)",
+        "s3": "[3/3] Lite self-check (core import + memory store writable; full handshake via CLI: continuum doctor)",
+        "s3_lite_ok": "  core imports OK, memory store writable",
+        "s3_lite_fail": "  core self-check failed: {err}",
         "hs_ok": "server handshake (exact config command): initialize OK, {ms}",
         "hs_fail": "server handshake failed (exact config command): {err}",
         "spawn_fail": "server failed to start (exact config command): {err}",
@@ -171,37 +178,60 @@ def check_server_live(command: list[str], env_extra: dict[str, str] | None = Non
         return _check_entry(T["spawn_fail"].format(err=str(e)), False, lang=lang)
     try:
         assert proc.stdin and proc.stdout
-        proc.stdin.write(json.dumps({
+        init = json.dumps({
             "jsonrpc": "2.0", "id": 1, "method": "initialize",
             "params": {"protocolVersion": "2024-11-05", "capabilities": {},
                        "clientInfo": {"name": "continuum-doctor", "version": "0.0.1"}},
-        }) + "\n")
-        proc.stdin.flush()
+        }) + "\n"
         t0 = time.monotonic()
-        line = proc.stdout.readline()
+        # communicate 单步完成"写 stdin + 读 stdout + 超时杀"——永不永久卡
+        out, _ = proc.communicate(input=init, timeout=timeout)
         dt = (time.monotonic() - t0) * 1000
-        resp = json.loads(line)
+        first = out.splitlines()[0] if out else ""
+        resp = json.loads(first)
         name = resp["result"]["serverInfo"]["name"]
         return _check_entry(T["hs_ok"].format(ms=f"{dt:.0f}"), name == "continuum", lang=lang)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        out, _ = proc.communicate()
+        first = out.splitlines()[0] if out else ""
+        return _check_entry(T["hs_fail"].format(err=f"handshake timeout after {timeout:.0f}s"), False, lang=lang)
     except Exception as e:  # noqa: BLE001 - 体检器要兜住一切失败
         return _check_entry(T["hs_fail"].format(err=f"{type(e).__name__}: {e}"), False, lang=lang)
     finally:
         try:
-            if proc.stdin:
-                proc.stdin.close()
-            proc.terminate()
-            proc.wait(timeout=5)
+            if proc.poll() is None:
+                proc.kill()
         except Exception:  # noqa: BLE001
-            proc.kill()
+            pass
 
 
-def run_doctor(db_path: Path = DEFAULT_DB, lang: str = "zh") -> int:
+def run_doctor(db_path: Path = DEFAULT_DB, lang: str = "zh",
+               spawn_check: bool = True) -> int:
     T = _S(lang)
     print(T["title"].format(now=time.strftime("%Y-%m-%d %H:%M:%S")))
     configs = check_config_files(lang)
     check_db(db_path, lang=lang)
     print(T["s3"])
     ok = True
+    if not spawn_check:
+        # 壳内轻量自检：不 spawn 子进程（Windows 实测壳进程内 spawn 会死锁）。
+        # 核心可导入 + db 可写即认为通过；完整握手用 CLI 版 doctor。
+        try:
+            from continuum.server.mcp import build_mcp_server  # noqa: F401
+            probe = db_path.with_name(db_path.name + ".write_probe")
+            probe.write_bytes(b"")
+            probe.unlink()
+            _check_entry(T["s3_lite_ok"], True, lang=lang)
+        except Exception as e:  # noqa: BLE001
+            ok = False
+            _check_entry(T["s3_lite_fail"].format(err=f"{type(e).__name__}: {e}"), False, lang=lang)
+        print("\n" + T["hint_title"])
+        hints = _hint(lang)
+        for host in ("workbuddy", "codex", "claude-code"):
+            print(f"  - {host}: {hints[host]}")
+        print(RELOAD_PROXY.get(lang) or RELOAD_PROXY["en"])
+        return ok
     if "workbuddy" in configs:
         entry_env: dict[str, str] = {}
         try:
