@@ -16,8 +16,9 @@ BAD_KEYWORDS = ("urllib", "requests", "httpx", "socket", "http.client", "urllib3
 # 白名单目录（与 test_commercial.py::TestZeroNetwork 同一契约，两处必须同步修改）：
 # - judges/：BYOK 可选模块——仅当用户显式配置 endpoint+key 才外联
 # - proxy/：LLM API 透明代理——仅当用户显式启动 `continuum proxy --target <上游>` 才外联
-# 两者文件头均标记 BYOK-USER-INITIATED-NETWORK。核心本体（存储/收敛/召回）仍然零外联。
-WHITELIST_DIRS = {"judges", "proxy"}
+# - shell/：本机回环图形壳（LOCAL-LOOPBACK-UI）——仅绑定 127.0.0.1，非外联通道
+# 三者文件头均带标记。核心本体（存储/收敛/召回）仍然零外联。
+WHITELIST_DIRS = {"judges", "proxy", "shell"}
 
 
 def main() -> int:

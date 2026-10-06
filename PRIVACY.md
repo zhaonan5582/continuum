@@ -26,6 +26,9 @@
 | LLM API 透明代理（方式 B） | 仅当你显式启动 `continuum proxy --target <上游地址>` | 你自己指定的上游 LLM API | 不启动即不联网 |
 | 判决模型（BYOK，可选） | 仅当你显式配置 endpoint + API key | 你自己配置的端点 | 不配置即不联网 |
 
+另有**软件壳（`continuum shell`）**：仅绑定 `127.0.0.1` 的本机回环图形界面——
+它不与任何外部主机通信，不是外联通道。
+
 两者源码文件头均带 `BYOK-USER-INITIATED-NETWORK` 标记，且不在 CI 零外联扫描的豁免之外——
 扫描规则与白名单见 `tests/check_no_network.py`（与 `tests/test_commercial.py::TestZeroNetwork` 同一契约）。
 

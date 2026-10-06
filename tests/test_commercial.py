@@ -24,7 +24,7 @@ class TestZeroNetwork(unittest.TestCase):
     def test_no_network_imports(self):
         src = Path(__file__).resolve().parents[1] / "src" / "continuum"
         bad_keywords = ("requests", "httpx", "socket", "http.client", "urllib3")
-        whitelist_dirs = {"judges", "proxy"}
+        whitelist_dirs = {"judges", "proxy", "shell"}
         offenders = [
             str(p)
             for p in src.rglob("*.py")

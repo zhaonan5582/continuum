@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Continuum 软件壳</title>
+<style>
+  :root {
+    --brand: #2563eb; --brand-weak: #dbeafe; --bg: #f5f7fa; --card: #ffffff;
+    --text: #1e293b; --muted: #64748b; --line: #e2e8f0;
+    --ok: #16a34a; --warn: #d97706; --bad: #dc2626; --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--bg); color: var(--text);
+         font: 14px/1.6 "Segoe UI", "Microsoft YaHei", sans-serif; }
+  header { background: var(--card); border-bottom: 1px solid var(--line);
+           padding: 14px 24px; display: flex; align-items: center; gap: 18px; }
+  header h1 { font-size: 17px; color: var(--brand); }
+  header .sub { color: var(--muted); font-size: 12px; }
+  nav { margin-left: auto; display: flex; gap: 6px; }
+  nav button { border: none; background: transparent; padding: 7px 14px; border-radius: 8px;
+               cursor: pointer; font-size: 14px; color: var(--muted); }
+  nav button.on { background: var(--brand-weak); color: var(--brand); font-weight: 600; }
+  main { max-width: 1060px; margin: 22px auto; padding: 0 20px; }
+  .card { background: var(--card); border-radius: var(--radius);
+          box-shadow: 0 1px 3px rgba(15,23,42,.06), 0 4px 14px rgba(15,23,42,.04);
+          padding: 18px 20px; margin-bottom: 16px; }
+  .card h2 { font-size: 15px; margin-bottom: 12px; color: var(--text); }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap: 12px; }
+  .stat { background: var(--bg); border-radius: 10px; padding: 12px 14px; }
+  .stat b { display: block; font-size: 22px; color: var(--brand); }
+  .stat span { color: var(--muted); font-size: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 500; }
+  input[type=text], textarea, select {
+    width: 100%; border: 1px solid var(--line); border-radius: 8px;
+    padding: 8px 10px; font: inherit; background: #fff; }
+  textarea { min-height: 84px; resize: vertical; }
+  button.pri { background: var(--brand); color: #fff; border: none; border-radius: 8px;
+               padding: 8px 18px; cursor: pointer; font-size: 14px; }
+  button.pri:hover { filter: brightness(1.08); }
+  button.mini { border: 1px solid var(--line); background: #fff; border-radius: 7px;
+                padding: 4px 10px; cursor: pointer; font-size: 12px; }
+  .row { display: flex; gap: 10px; align-items: flex-start; }
+  .row > * { flex: 1; }
+  .muted { color: var(--muted); font-size: 12px; }
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; }
+  .tag.block { background: #fee2e2; color: var(--bad); }
+  .tag.warn { background: #fef3c7; color: var(--warn); }
+  .tag.ask  { background: #e0e7ff; color: var(--brand); }
+  .tag.on   { background: #dcfce7; color: var(--ok); }
+  .tag.off  { background: var(--line); color: var(--muted); }
+  pre { background: var(--bg); border-radius: 10px; padding: 12px; overflow: auto;
+        font-size: 12px; white-space: pre-wrap; word-break: break-all; }
+  .msg { padding: 8px 12px; border-radius: 8px; margin: 8px 0; font-size: 13px; display: none; }
+  .msg.ok { background: #dcfce7; color: var(--ok); display: block; }
+  .msg.bad { background: #fee2e2; color: var(--bad); display: block; }
+  .hide { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Continuum</h1>
+  <span class="sub">跨 agent 持久记忆与连续人格层 · <span id="dbpath"></span></span>
+  <nav id="tabs">
+    <button data-t="overview" class="on">总览</button>
+    <button data-t="persona">人格</button>
+    <button data-t="redlines">红线</button>
+    <button data-t="recall">记忆检索</button>
+    <button data-t="doctor">体检</button>
+  </nav>
+</header>
+<main>
+  <div id="msg" class="msg"></div>
+
+  <!-- 总览 -->
+  <section id="v-overview">
+    <div class="card"><h2>库内统计</h2><div class="stats" id="stats"></div>
+      <p class="muted" style="margin-top:10px" id="ov-hint"></p></div>
+    <div class="card"><h2>会话（各自独立，消息不混合）</h2>
+      <table id="sess"><thead><tr><th>#</th><th>会话</th><th>项目</th><th>消息数</th><th>标题</th></tr></thead><tbody></tbody></table>
+    </div>
+    <div class="card"><h2>沉淀（跨会话扫描 → 结构化记忆）</h2>
+      <div class="row">
+        <label style="flex:0 0 auto;display:flex;align-items:center;gap:6px">
+          <input type="checkbox" id="ex-confirm" checked> 直接置为 active（勾选=人工确认）</label>
+        <button class="pri" style="flex:0 0 auto" onclick="doExtract()">立即沉淀</button>
+      </div>
+      <pre id="ex-out" class="hide"></pre>
+    </div>
+  </section>
+
+  <!-- 人格 -->
+  <section id="v-persona" class="hide">
+    <div class="card"><h2>当前人格</h2><div id="persona-cur" class="muted">加载中…</div></div>
+    <div class="card"><h2>新建人格版本（覆盖式定版，历史可回溯）</h2>
+      <textarea id="persona-text" placeholder="人格状态块：身份、语气、协作默契、硬规矩……"></textarea>
+      <div class="row" style="margin-top:8px">
+        <input type="text" id="persona-reason" placeholder="修改原因（必填，进版本审计）">
+        <button class="pri" style="flex:0 0 auto" onclick="savePersona()">定版</button>
+      </div></div>
+    <div class="card"><h2>追加 few-shot 样本（挂到当前版本）</h2>
+      <div class="row"><input type="text" id="ps-user" placeholder="用户说…"></div>
+      <div class="row" style="margin-top:8px"><input type="text" id="ps-agent" placeholder="期望助手答…"></div>
+      <div class="row" style="margin-top:8px">
+        <input type="text" id="ps-tag" placeholder="标签（可选）">
+        <button class="pri" style="flex:0 0 auto" onclick="addSample()">追加样本</button>
+      </div>
+      <div id="ps-list" style="margin-top:10px"></div></div>
+    <div class="card"><h2>版本历史</h2><table id="pv-tab"><thead><tr><th>版本</th><th>原因</th><th>时间</th></tr></thead><tbody></tbody></table></div>
+  </section>
+
+  <!-- 红线 -->
+  <section id="v-redlines" class="hide">
+    <div class="card"><h2>红线列表</h2>
+      <table id="rl-tab"><thead><tr><th>#</th><th>状态</th><th>动作</th><th>范围</th><th>陈述</th><th>pattern</th><th>用例</th><th></th></tr></thead><tbody></tbody></table>
+      <div style="margin-top:10px"><button class="mini" onclick="runGuardTest()">▶ 执行正反测试集（防误伤回归）</button></div>
+      <pre id="gt-out" class="hide"></pre></div>
+    <div class="card"><h2>录入红线</h2>
+      <div class="row"><input type="text" id="rl-pattern" placeholder="pattern（正则优先，写动作短语如：删除.*参照站；非法正则回退子串）">
+        <select id="rl-action" style="flex:0 0 110px"><option>block</option><option>warn</option><option>ask</option></select></div>
+      <div class="row" style="margin-top:8px"><input type="text" id="rl-stmt" placeholder="红线陈述（逐字存储，禁止改写）">
+        <input type="text" id="rl-scope" placeholder="scope（global）" style="flex:0 0 160px">
+        <button class="pri" style="flex:0 0 auto" onclick="addRedline()">录入</button></div></div>
+    <div class="card"><h2>补正反用例（防误伤）</h2>
+      <div class="row"><input type="number" id="rt-id" placeholder="红线 #id" style="flex:0 0 120px">
+        <select id="rt-case" style="flex:0 0 140px"><option value="positive">positive（该拦）</option><option value="negative">negative（不该拦）</option></select>
+        <input type="text" id="rt-sample" placeholder="样例 target"></div>
+      <div class="row" style="margin-top:8px"><span class="muted" style="flex:1">期望动作缺省：positive→block，negative→allow</span>
+        <button class="pri" style="flex:0 0 auto" onclick="addRt()">录入用例</button></div></div>
+  </section>
+
+  <!-- 检索 -->
+  <section id="v-recall" class="hide">
+    <div class="card"><h2>记忆检索（跨会话，每条带证据等级与原文指针）</h2>
+      <div class="row"><input type="text" id="rc-q" placeholder="关键词，如：参照站 / 设备管理 / 粗集料检测" onkeydown="if(event.key==='Enter')doRecall()">
+        <button class="pri" style="flex:0 0 auto" onclick="doRecall()">检索</button></div>
+      <div id="rc-out" style="margin-top:12px"></div></div>
+  </section>
+
+  <!-- 体检 -->
+  <section id="v-doctor" class="hide">
+    <div class="card"><h2>一键体检（配置 / 记忆库 / server 握手 / 生效指引）</h2>
+      <button class="pri" onclick="runDoctor()">运行体检</button>
+      <pre id="dt-out" class="hide"></pre></div>
+  </section>
+</main>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => (s ?? "").toString().replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function msg(text, ok) { const m = $("#msg"); m.textContent = text; m.className = "msg " + (ok ? "ok" : "bad");
+  clearTimeout(m._t); m._t = setTimeout(() => m.className = "msg", 4000); }
+async function api(path, body) {
+  const opt = body ? {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body)} : {};
+  const r = await fetch(path, opt);
+  const d = await r.json();
+  if (d.error) throw new Error(d.error);
+  return d;
+}
+document.getElementById("tabs").addEventListener("click", e => {
+  if (e.target.tagName !== "BUTTON") return;
+  document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b === e.target));
+  document.querySelectorAll("main > section").forEach(s => s.classList.add("hide"));
+  document.getElementById("v-" + e.target.dataset.t).classList.remove("hide");
+  if (e.target.dataset.t === "persona") loadPersona();
+  if (e.target.dataset.t === "redlines") loadRedlines();
+});
+
+async function loadOverview() {
+  const d = await api("/api/overview");
+  $("#dbpath").textContent = d.db_path;
+  const s = d.stats;
+  $("#stats").innerHTML = [["会话", s.sessions], ["消息（L3 原文）", s.messages],
+    ["active 记忆", s.memories_active], ["pending 记忆", s.memories_pending],
+    ["生效红线", s.redlines], ["人格版本", s.persona_version ?? "未录入"]]
+    .map(([k, v]) => `<div class="stat"><b>${esc(v)}</b><span>${esc(k)}</span></div>`).join("");
+  $("#sess tbody").innerHTML = d.sessions.map(x =>
+    `<tr><td>${x.id}</td><td>${esc((x.external_id||"").slice(0,18))}…</td>
+     <td>${esc((x.project_id||"").slice(0,28))}</td><td>${x.messages}</td>
+     <td>${esc(x.title||"")}</td></tr>`).join("");
+  $("#ov-hint").textContent = "消息按会话独立存储、永不混合；记忆条目跨会话汇总且每条带溯源指针；人格为全局单份（版本化，人格页维护）。";
+}
+async function doExtract() {
+  try {
+    const d = await api("/api/extract", {confirm: $("#ex-confirm").checked});
+    $("#ex-out").classList.remove("hide");
+    $("#ex-out").textContent = `沉淀完成：active ${d.active} 条，pending ${d.pending} 条，扫描 ${d.scanned} 条消息`;
+    msg("沉淀完成", true); loadOverview();
+  } catch (e) { msg(e.message, false); }
+}
+async function loadPersona() {
+  const d = await api("/api/persona");
+  if (!d.current) { $("#persona-cur").textContent = "尚未录入人格——在下方创建第一个版本。"; }
+  else {
+    $("#persona-cur").innerHTML = `<span class="tag on">v${d.current.version}</span> <pre>${esc(d.current.snapshot_md)}</pre>`;
+    $("#ps-list").innerHTML = d.samples.length
+      ? "<table><thead><tr><th>用户说</th><th>期望助手</th><th>标签</th></tr></thead><tbody>" +
+        d.samples.map(s => `<tr><td>${esc(s.user_utterance)}</td><td>${esc(s.agent_response)}</td><td>${esc(s.tag||"")}</td></tr>`).join("") + "</tbody></table>"
+      : "<p class='muted'>当前版本还没有 few-shot 样本。</p>";
+  }
+  $("#pv-tab tbody").innerHTML = d.versions.map(v =>
+    `<tr><td>v${v.version}</td><td>${esc(v.change_reason)}</td><td>${esc(v.created_at.slice(0,19))}</td></tr>`).join("");
+}
+async function savePersona() {
+  try {
+    await api("/api/persona/version", {text: $("#persona-text").value, reason: $("#persona-reason").value});
+    msg("人格已定版", true); $("#persona-text").value = ""; $("#persona-reason").value = ""; loadPersona();
+  } catch (e) { msg(e.message, false); }
+}
+async function addSample() {
+  try {
+    await api("/api/persona/sample", {user: $("#ps-user").value, agent: $("#ps-agent").value, tag: $("#ps-tag").value});
+    msg("样本已追加", true); $("#ps-user").value = ""; $("#ps-agent").value = ""; loadPersona();
+  } catch (e) { msg(e.message, false); }
+}
+async function loadRedlines() {
+  const d = await api("/api/redlines");
+  $("#rl-tab tbody").innerHTML = d.redlines.map(r =>
+    `<tr><td>${r.id}</td>
+     <td><span class="tag ${r.enabled ? "on" : "off"}">${r.enabled ? "生效" : "停用"}</span></td>
+     <td><span class="tag ${r.action}">${r.action}</span></td>
+     <td>${esc(r.scope)}</td><td>${esc(r.statement)}</td>
+     <td style="max-width:220px;word-break:break-all">${esc(r.pattern)}</td><td>${r.cases}</td>
+     <td><button class="mini" onclick="toggleRl(${r.id})">${r.enabled ? "停用" : "启用"}</button></td></tr>`).join("")
+    || "<tr><td colspan='8' class='muted'>暂无红线</td></tr>";
+}
+async function toggleRl(id) {
+  try { await api("/api/redlines/toggle", {id}); loadRedlines(); } catch (e) { msg(e.message, false); }
+}
+async function addRedline() {
+  try {
+    await api("/api/redlines", {pattern: $("#rl-pattern").value, statement: $("#rl-stmt").value,
+                                action: $("#rl-action").value, scope: $("#rl-scope").value || "global"});
+    msg("红线已录入——记得补正反用例", true); $("#rl-pattern").value = ""; $("#rl-stmt").value = ""; loadRedlines();
+  } catch (e) { msg(e.message, false); }
+}
+async function addRt() {
+  try {
+    await api("/api/redlines/test", {redline_id: +$("#rt-id").value, case: $("#rt-case").value, sample: $("#rt-sample").value});
+    msg("用例已录入", true); $("#rt-sample").value = ""; loadRedlines();
+  } catch (e) { msg(e.message, false); }
+}
+async function runGuardTest() {
+  try {
+    const d = await api("/api/guard-test");
+    $("#gt-out").classList.remove("hide");
+    $("#gt-out").textContent = d.results.map(r =>
+      `[${r.pass ? "PASS" : "FAIL"}] 红线#${r.redline_id} ${r.case_type} 期望=${r.expected_action} 实际=${r.actual_action ?? r.actual}`).join("\n")
+      + `\n\n执行 ${d.total} 项，通过 ${d.passed}，失败 ${d.total - d.passed}`;
+  } catch (e) { msg(e.message, false); }
+}
+async function doRecall() {
+  try {
+    const q = $("#rc-q").value;
+    const d = await api("/api/recall?q=" + encodeURIComponent(q));
+    $("#rc-out").innerHTML = d.items.length
+      ? `<p class="muted">延迟 ${d.latency_ms}ms，命中 ${d.items.length} 条（停止于 ${esc(d.stopped_by)}）</p>` +
+        `<table><thead><tr><th>类型</th><th>证据</th><th>内容</th><th>指针</th></tr></thead><tbody>` +
+        d.items.map(i => `<tr><td>${esc(i.kind)}</td><td>${esc(i.evidence_level)}</td><td>${esc(i.statement)}</td><td style="max-width:160px;word-break:break-all">${esc(i.source_pointer||"")}</td></tr>`).join("") + "</tbody></table>"
+      : "<p class='muted'>无命中。</p>";
+  } catch (e) { msg(e.message, false); }
+}
+async function runDoctor() {
+  try {
+    const d = await api("/api/doctor", {});
+    $("#dt-out").classList.remove("hide");
+    $("#dt-out").textContent = d.output;
+  } catch (e) { msg(e.message, false); }
+}
+loadOverview();
+</script>
+</body>
+</html>

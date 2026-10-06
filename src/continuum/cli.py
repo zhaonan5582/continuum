@@ -170,6 +170,17 @@ def cmd_doctor(args) -> int:
     return run_doctor()
 
 
+def cmd_shell(args) -> int:
+    """软件壳：本机回环图形界面（127.0.0.1，非外联）——设置全部点选化。"""
+    from http.server import ThreadingHTTPServer  # noqa: F401 - 预检导入失败尽早暴露
+
+    srv = _open_server(args.db)
+    from continuum.shell.server import run_shell
+
+    run_shell(srv, args.db, port=args.port, open_browser=not args.no_browser)
+    return 0
+
+
 def cmd_redline_add(args) -> int:
     be = _open_backend(args.db)
     rid = be.add_redline(pattern=args.pattern, statement=args.statement,
@@ -343,6 +354,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     dt = sub.add_parser("doctor", help="一键体检：配置/server 自检/宿主加载状态 + 生效指引")
     dt.set_defaults(func=cmd_doctor)
+
+    sh = sub.add_parser("shell", help="启动软件壳（本机回环图形界面，浏览器打开）")
+    sh.add_argument("--db", default=argparse.SUPPRESS,
+                    help="记忆库路径（也可放子命令前：continuum --db X shell）")
+    sh.add_argument("--port", type=int, default=8501, help="监听端口（默认 8501，仅 127.0.0.1）")
+    sh.add_argument("--no-browser", action="store_true", help="不自动打开浏览器")
+    sh.set_defaults(func=cmd_shell)
 
     gt = sub.add_parser("guard-test", help="执行红线正反测试集（防误伤回归）")
     gt.set_defaults(func=cmd_guard_test)

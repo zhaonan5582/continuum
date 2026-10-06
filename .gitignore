@@ -33,3 +33,4 @@ pro/
 job*.log
 jobs*.json
 runcheck.json
+shell_run.log
