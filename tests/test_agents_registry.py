@@ -228,3 +228,39 @@ class TestSqliteSource(unittest.TestCase):
             bad.write_text("not a database", encoding="utf-8")
             msgs, wm = ZCodeSource().read(bad, 5)
             self.assertEqual((msgs, wm), ([], 5), "坏文件 → 水位不变、不抛")
+
+
+class TestSnifferMatrix(unittest.TestCase):
+    """N5：未知宿主形态矩阵（11 正例 + 5 反例）——普适性与防误报双向契约。"""
+
+    POS = [
+        ({"type": "message", "role": "user", "content": "text"}, ("user", "text")),
+        ({"type": "response_item", "payload": {"type": "message", "role": "assistant",
+                                               "content": [{"text": "reply"}]}}, ("assistant", "reply")),
+        ({"role": "user", "content": "plain"}, ("user", "plain")),
+        ({"type": "user", "message": {"role": "user", "content": "cc"}}, ("user", "cc")),
+        ({"type": "message", "role": "user", "content": [{"type": "input_text", "text": "block"}]},
+         ("user", "block")),
+        ({"kind": "chat", "data": {"role": "user", "content": "nested"}}, ("user", "nested")),
+        ({"event": "message", "sender": "user", "text": "event style"}, ("user", "event style")),
+        ({"text": "bare text", "who": "user"}, ("user", "bare text")),
+        ({"from": "ai", "body": "bot reply"}, ("assistant", "bot reply")),
+        ({"author": "human", "value": "human msg"}, ("user", "human msg")),
+    ]
+    NEG = [
+        {"type": "world_state", "payload": {"full": True}},
+        {"role": "system", "content": "sys"},
+        {"role": "developer", "content": "dev"},
+        {"role": "user", "content": "   "},
+        {"token_usage_record": 1, "total": 100},
+    ]
+
+    def test_positive_shapes_recognized(self):
+        from continuum.importers.sources import _sniff_message
+        for d, expect in self.POS:
+            self.assertEqual(_sniff_message(d), expect, f"未识别: {d}")
+
+    def test_negative_shapes_rejected(self):
+        from continuum.importers.sources import _sniff_message
+        for d in self.NEG:
+            self.assertIsNone(_sniff_message(d), f"误报: {d}")

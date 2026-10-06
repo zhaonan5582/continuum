@@ -99,45 +99,65 @@ def _safe_ms(ts) -> str | None:
     return None
 
 
-def _sniff_message(d: dict) -> tuple[str, str] | None:
+_ROLE_ALIASES = {
+    "role": "role", "sender": "role", "from": "role", "author": "role",
+    "who": "role", "speaker": "role",
+}
+_ROLE_NORMALIZE = {
+    "human": "user", "user": "user", "me": "user", "prompt": "user",
+    "ai": "assistant", "bot": "assistant", "assistant": "assistant",
+    "model": "assistant", "agent": "assistant", "response": "assistant",
+}
+_CONTENT_ALIASES = ("content", "text", "body", "value", "utterance", "message")
+_NEST_KEYS = ("payload", "data", "message", "entry", "item", "record")
+
+
+def _sniff_message(d: dict, _depth: int = 0) -> tuple[str, str] | None:
     """结构嗅探：从任意一行 JSON 里认出 (role, text)；认不出返回 None。
 
-    依次尝试四种已知形态（覆盖 workbuddy/CC 系 / codex / OpenAI 风格 / 嵌套）：
+    覆盖（N5 实测 9 形态矩阵后扩展）：
     A. {type:"message", role, content}
-    B. {type: <任意>, payload:{type:"message", role, content}}   （codex rollout）
-    C. {role, content}
-    D. {message:{role, content}} / {message:{content}}           （含 type=user/assistant 的 CC 形态）
+    B. {payload:{type:"message", role, content}}         （codex rollout）
+    C. {role, content}                                    （OpenAI 风格）
+    D. {type:user/assistant, message:{role, content}}     （CC 形态）
+    E. **别名**：role←sender/from/author/who/speaker；content←text/body/value
+    F. **嵌套递归**：payload/data/message/entry/item/record（一层，防无限）
+    G. **role 归一**：human→user、ai/bot/model→assistant
     """
-    def _pick(role, content, ts=None):
-        r = role if role in ("user", "assistant") else None
-        if r is None or role in ("system", "developer", "tool"):
-            return None
-        text = _blocks_to_text(content)
-        return (r, text) if text.strip() else None
+    if not isinstance(d, dict) or _depth > 1:
+        return None
 
-    # A
-    if d.get("type") == "message" and "role" in d:
-        got = _pick(d.get("role"), d.get("content"))
-        if got:
-            return got
-    # B（codex rollout：response_item / event_msg 下的 payload）
-    payload = d.get("payload")
-    if isinstance(payload, dict) and payload.get("type") == "message":
-        got = _pick(payload.get("role"), payload.get("content"))
-        if got:
-            return got
-    # C
-    if "role" in d and "content" in d:
-        got = _pick(d.get("role"), d.get("content"))
-        if got:
-            return got
-    # D（CC 常见：type=user/assistant + message 对象）
-    msg = d.get("message")
-    if isinstance(msg, dict):
-        role = msg.get("role") or d.get("type")
-        got = _pick(role, msg.get("content"))
-        if got:
-            return got
+    def _role_of(obj: dict) -> str | None:
+        for k, _ in _ROLE_ALIASES.items():
+            if k in obj:
+                v = str(obj.get(k) or "").strip().lower()
+                if v in _ROLE_NORMALIZE:
+                    return _ROLE_NORMALIZE[v]
+        return None
+
+    def _text_of(obj: dict) -> str:
+        for k in _CONTENT_ALIASES:
+            if k in obj:
+                t = _blocks_to_text(obj.get(k))
+                if t.strip():
+                    return t
+        return ""
+
+    role = _role_of(d)
+    text = _text_of(d)
+    if role and text.strip():
+        return (role, text)
+
+    # 嵌套递归（一层）：payload/data/... 里可能是完整的消息对象
+    for nk in _NEST_KEYS:
+        inner = d.get(nk)
+        if isinstance(inner, dict):
+            got = _sniff_message(inner, _depth + 1)
+            if got:
+                # 外层 role 优先（如 {"sender":"user","data":{"content":"x"}}）
+                if role:
+                    return (role, got[1])
+                return got
     return None
 
 
